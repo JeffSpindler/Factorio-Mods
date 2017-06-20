@@ -1,3 +1,31 @@
+-- Powered Floor mod for Factorio
+--
+-- This mod adds tiles which provide power to whatever's sitting on top of them.
+--
+-- There's 3 items which the user gets to play with:
+--
+--   powered-floor-tile         provides power to objects on top of the tile.  
+--                              Also transmits power to adjacent powered-floor-* things 
+--                              (via powered-floor-widget, see below).
+
+--   powered-floor-circuit-tile Provides power to objects on top of the tile  
+--                              Also transmits power to adjacent powered-floor-* things
+--                              and transmits red and green circuit signals to 
+--                              adjacent powered-floor-circuit-tiles and powered-floor-taps 
+--                              (via powered-floor-circuit-widget, see below)
+
+--   powered-floor-tap          Not a tile, more like a very small electric-pole, 
+--                              that also transmits red and green circuit signals to 
+--                              adjacent powered-floor-circuit-tiles and powered-floor-taps
+--
+-- Some hidden entities that are used in this mod.  These are placed when a powered-floor-*tile is built.  
+-- They actually have the wiring.
+--
+--   powered-floor-widget        electric-pole type
+--   powered-floor-circuit-widget Same as powered-floor-widget, handled differently in control.lua
+
+
+
 --
 -- item
 -- 
@@ -480,18 +508,18 @@ data:extend({
 			type = "ghost-time-to-live",
 			modifier = 60 * 60 * 6
 		}
-		},
-		prerequisites = {"electric-energy-distribution-1"},
-		unit =
-			{
+	},
+	prerequisites = {"electric-energy-distribution-1"},
+	unit =
+		{
 			count = 40,
 			ingredients =
 			{
 				{"science-pack-1", 1},
 				{"science-pack-2", 1}
 			},
-		time = 30
-	},
+			time = 30
+		},
 	order = "c-k-a",
 }     
      
