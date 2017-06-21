@@ -10,3 +10,5 @@ side of the Factorio window, in items per second, and items per minute.
 ### 0.0.1
 * Initial release - only handles assemblers, chemical plants, refineries, centrifuges.
 
+### 0.0.2
+* Fixed default hotkey (CONTROL-N not CTRL-N).  Fixed en locale strings
