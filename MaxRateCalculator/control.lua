@@ -168,21 +168,22 @@ local function open_gui(event, inputs, outputs)
 end
 
 -- calculate the speed and productivity effects of a single module
-local function calc_mod( ent, modeffects, modquant )
-	protoeffects = mod.prototype.module_effects
+local function calc_mod( modname, modeffects, modquant )
+	protoeffects = game.item_prototypes[modname].module_effects
+	-- game.print("mod is " .. modname .. " quantity " .. modquant)
 	for effectname,effectvals in pairs(protoeffects)
 	do
-		-- game.print(" effectname is " .. effectname .. " modquant " .. modquant)
+		-- game.print("...effectname is " .. effectname .. " modquant " .. modquant)
 		for _,bonamount in pairs(effectvals) -- first item in pair seems to be always "bonus"
 		do
-			-- game.print(" effectname,bonix,bon " .. effectname ..  "," .. bonamount)
+			-- game.print("...effectname,bonix,bon " .. effectname ..  "," .. bonamount)
 			if effectname == "speed"
 			then
-				-- game.print("adjust speed by " .. ( bonamount * modquant ))
+				-- game.print("...adjust speed by " .. ( bonamount * modquant ))
 				modeffects.speed = modeffects.speed + ( bonamount * modquant )
 			elseif effectname == "productivity"
 			then
-				-- game.print("adjust productivity by " .. ( bonamount * modquant ))
+				-- game.print("...adjust productivity by " .. ( bonamount * modquant ))
 				modeffects.prod = modeffects.prod + (bonamount * modquant )
 			end
 		end
@@ -199,12 +200,24 @@ local function calc_mods(entity, modeffects)
 
 	for modname,modquant in pairs(modcontents)
 	do
+		-- game.print("calc_mods proto is " .. game.item_prototypes[modname].name)
 		-- game.print("calc_mods modname,modquant " .. modname .. "," .. modquant)
-		mod = modinv[ix]
 		
-		calc_mod(mod, modeffects, modquant)
+		calc_mod(modname, modeffects, modquant)
 		ix = ix + 1
 	end 
+
+	--[[local count = 0
+	for _ in ipairs(modinv) do count = count + 1 end
+	game.print("calcmods " .. count .. " or " .. #modinv)
+	for _,mod in ipairs(modinv)
+	do
+		modname = mod.name
+		modquant = modcontents[modname]
+		game.print("calc_mods modname,modquant " .. modname .. "," .. modquant)
+		calc_mod(mod, modeffects, modquant)
+	end
+	]]--
 	
 	return modeffects
 end

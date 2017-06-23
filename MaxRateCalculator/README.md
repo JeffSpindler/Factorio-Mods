@@ -12,3 +12,6 @@ side of the Factorio window, in items per second, and items per minute.
 
 ### 0.0.2
 * Fixed default hotkey (CONTROL-N not CTRL-N).  Fixed en locale strings
+
+### 0.0.3
+* Fixed calculation bug when mixed set of modules in an assembler
