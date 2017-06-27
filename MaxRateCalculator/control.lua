@@ -168,7 +168,7 @@ local function open_gui(event, inputs, outputs)
 end
 
 -- calculate the speed and productivity effects of a single module
-local function calc_mod( modname, modeffects, modquant )
+local function calc_mod( modname, modeffects, modquant, effectivity )
 	protoeffects = game.item_prototypes[modname].module_effects
 	-- game.print("mod is " .. modname .. " quantity " .. modquant)
 	for effectname,effectvals in pairs(protoeffects)
@@ -180,11 +180,11 @@ local function calc_mod( modname, modeffects, modquant )
 			if effectname == "speed"
 			then
 				-- game.print("...adjust speed by " .. ( bonamount * modquant ))
-				modeffects.speed = modeffects.speed + ( bonamount * modquant )
+				modeffects.speed = modeffects.speed + ( bonamount * modquant * effectivity)
 			elseif effectname == "productivity"
 			then
 				-- game.print("...adjust productivity by " .. ( bonamount * modquant ))
-				modeffects.prod = modeffects.prod + (bonamount * modquant )
+				modeffects.prod = modeffects.prod + (bonamount * modquant  * effectivity)
 			end
 		end
 
@@ -192,10 +192,9 @@ local function calc_mod( modname, modeffects, modquant )
 end
 
 -- calculate the effects of all the modules in the entity
-local function calc_mods(entity, modeffects)
+local function calc_mods(entity, modeffects, effectivity)
 	modinv = entity.get_module_inventory()
 	modcontents = modinv.get_contents()
-
 	local ix = 1
 
 	for modname,modquant in pairs(modcontents)
@@ -203,21 +202,10 @@ local function calc_mods(entity, modeffects)
 		-- game.print("calc_mods proto is " .. game.item_prototypes[modname].name)
 		-- game.print("calc_mods modname,modquant " .. modname .. "," .. modquant)
 		
-		calc_mod(modname, modeffects, modquant)
+		calc_mod(modname, modeffects, modquant, effectivity)
 		ix = ix + 1
 	end 
 
-	--[[local count = 0
-	for _ in ipairs(modinv) do count = count + 1 end
-	game.print("calcmods " .. count .. " or " .. #modinv)
-	for _,mod in ipairs(modinv)
-	do
-		modname = mod.name
-		modquant = modcontents[modname]
-		game.print("calc_mods modname,modquant " .. modname .. "," .. modquant)
-		calc_mod(mod, modeffects, modquant)
-	end
-	]]--
 	
 	return modeffects
 end
@@ -228,22 +216,31 @@ local function check_beacons(surface, entity)
 	local x = entity.position.x
 	local y = entity.position.y
 	
-	-- game.print("check_beacons searching around " .. x .. "," .. y)
+	beacon_dist = game.entity_prototypes["beacon"].supply_area_distance
+	
+	-- game.print("check_beacons searching around " .. x .. "," .. y .. " beacon dist is " .. beacon_dist)
+	machine_box = entity.prototype.selection_box
+	-- game.print("check_beacons box is " .. machine_box.left_top.x .. "," .. machine_box.left_top.y .. " thru " .. machine_box.right_bottom.x .. "," .. machine_box.right_bottom.y)
 	modeffects = { speed = 0, prod = 0 }
 
 	local beacons = 0
 	local mods = 0
-	-- we cheat here because we know the supply area of all beacons is the same.  Edge of assembler must be within 2 squares
-	-- and assemblers are 3x3 ( so radius is 1.5 - round up to 2, plus 2 squares to beacon )
-	-- this will break with beacon mods, and may need to revisit when we want to calculate smelters, centrifuges, etc.
-	for _,beacon in pairs(surface.find_entities_filtered{ area= {{ x - 4, y - 4}, { x + 4, y + 4}}, type="beacon"})
-	do	
-		beacons = beacons + 1	
-		calc_mods( beacon, modeffects, modquant)
-	end
 
-	-- another cheat here, beacons affect things by half.  There must be a field in the prototype for beacons for this number
-	beacon_speed_effect = modeffects.speed * 0.5
+	-- assumes all beacons have same effect radius
+	search_area = { { x + machine_box.left_top.x - beacon_dist, 	y + machine_box.left_top.y - beacon_dist }, 
+				    { beacon_dist + x + machine_box.right_bottom.x, beacon_dist + y + machine_box.right_bottom.y }}
+	-- game.print(" upper left " .. 	x + machine_box.left_top.x - beacon_dist .. "," .. y + machine_box.left_top.y - beacon_dist)			    
+
+	for _,beacon in pairs(surface.find_entities_filtered{ area=search_area, type="beacon"})
+	do	
+		-- game.print(" beacon area is " .. beacon.prototype.supply_area_distance .. " at " .. beacon.position.x .. "," .. beacon.position.y)
+		beacons = beacons + 1	
+		-- local effectivity = beacon.prototype.distribution_effectivity
+		local effectivity = 0.5 -- beacon.prototype.distribution_effectivity exists, but isn't readable
+		calc_mods( beacon, modeffects, effectivity)
+	end
+	
+	beacon_speed_effect = modeffects.speed 
 	-- game.print("beacon_speed_effect " .. beacon_speed_effect .. " beacons " .. beacons .. " mods" .. mods)
 	return beacon_speed_effect
 
@@ -256,7 +253,8 @@ local function calc_assembler(entity, inputs, outputs, beacon_speed_effect)
 	local crafting_speed = entity.prototype.crafting_speed
 
 	modeffects = { speed = 0, prod = 0 }
-	modeffects = calc_mods(entity, modeffects)
+	local effectivity = 1
+	modeffects = calc_mods(entity, modeffects, effectivity)
 
 	-- adjust crafting speed based on modules and beacons
 	crafting_speed = crafting_speed * ( 1 + modeffects.speed + beacon_speed_effect)
@@ -285,12 +283,25 @@ local function calc_assembler(entity, inputs, outputs, beacon_speed_effect)
 		end
 	end
 	
+	--[[ 
+	-- initial code to compute fuel consumption by stone & electric furnaces
+	-- not sure who cares, not in game's production graph.  would also need to consider burner inserter
+	fuel_inventory = entity.get_fuel_inventory()
+	if fuel_inventory ~= nil
+	then
+		local fuel_name = fuel_inventory[1].name
+		game.print(entity.name  .. " has fuel " .. fuel_name)
+		fuel_proto = game.item_prototypes[fuel_name]
+		game.print("fuel value " .. fuel_proto.fuel_value)
+	end
+	]]--
+	
 	-- for all the products in the recipe (usually just one)
 	-- calculate the rate they're produced at and add each product to the outputs
 	-- table
 	for _, prod in ipairs(entity.recipe.products)
 	do
-		-- game.print("prod amount, modeffects.prod " .. prod.amount .. "," .. modeffects.prod )
+		-- game.print("prod amount, modeffects.prod " .. prod.name .. " " .. prod.amount .. "," .. modeffects.prod )
 		local amount
 		if prod.amount ~= nil
 		then
@@ -332,13 +343,24 @@ script.on_event(defines.events.on_player_selected_area,
 		--  of a selected machine, it will be considered)
 		for _, entity in ipairs(event.entities)
 		do
-			if entity.type == "assembling-machine"
+			if entity.type == "assembling-machine" or entity.type == "furnace"
 			then
-				-- game.print("Found entity " .. entity.name)
+				-- game.print("Found entity " .. entity.name  )
+
+		
 				if entity.recipe ~= nil
 				then
-					local beacon_speed_effect= check_beacons(surface, entity, beacon_speed_effect)
-				
+					local beacon_speed_effect = 0
+					-- supposedly could check
+					-- module_inventory_size :: uint [R]	The module inventory size or nil if this entity doesn't suport modules.
+					-- in LuaEntityPrototype, but is not nil for these furnaces - it's zero
+					--
+					-- TODO: Should look at number of entity's     module_specification.module_slots instead of hardcoding these two
+					-- however, this is not surfaced by the game's lua interface
+					if entity.name ~= "stone-furnace" and entity.name ~= "steel-furnace"
+					then
+						beacon_speed_effect = check_beacons(surface, entity, beacon_speed_effect)
+					end
 					calc_assembler(entity, inputs, outputs, beacon_speed_effect)
 				end
 			end

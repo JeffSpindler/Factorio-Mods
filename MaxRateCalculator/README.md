@@ -15,3 +15,7 @@ side of the Factorio window, in items per second, and items per minute.
 
 ### 0.0.3
 * Fixed calculation bug when mixed set of modules in an assembler
+
+### 0.1.4
+* Calculates production/consumption for furnaces (but not fuel)
+* Beacon effectivity no longer hardcoded
