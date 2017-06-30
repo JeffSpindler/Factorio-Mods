@@ -21,3 +21,14 @@ default_gui.table_marc_style =
 	resize_row_to_width = false,
 	resize_to_row_height = false,
 }
+
+data:extend(
+{
+	{
+	type = "sprite",
+	name = "sprite_marc_close",
+	filename = "__core__/graphics/cancel.png",
+	width = 64,
+	height = 64
+}
+})
