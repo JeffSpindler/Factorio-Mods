@@ -13,7 +13,7 @@ g_marc_units = {}
 g_marc_units[1] = {name="marc-gui-persec", localized_name = {"marc-gui-persec"}, multiplier = 1, divisor = 1}
 g_marc_units[2] = {name="marc-gui-permin", localized_name = {"marc-gui-permin"}, multiplier = 60, divisor = 1}
 g_marc_units[3] = {name="marc-transport-belt", localized_name = {"marc-transport-belt"}, multiplier = 3, divisor = 40}
-g_marc_units[4] = {name="marc-fast-transport-belt", localized_name = {"marc-fast-transport-belt"}, multiplier = 2, divisor = 40}
+g_marc_units[4] = {name="marc-fast-transport-belt", localized_name = {"marc-fast-transport-belt"}, multiplier = 3, divisor = 80}
 g_marc_units[5] = {name="marc-express-transport-belt", localized_name = {"marc-express-transport-belt"}, multiplier = 1, divisor = 40}
 g_marc_units_count = 5
 
