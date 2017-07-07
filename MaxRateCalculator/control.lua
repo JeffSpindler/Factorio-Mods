@@ -13,7 +13,7 @@ g_marc_units = {}
 g_marc_units[1] = {name="marc-gui-persec", localized_name = {"marc-gui-persec"}, multiplier = 1, divisor = 1}
 g_marc_units[2] = {name="marc-gui-permin", localized_name = {"marc-gui-permin"}, multiplier = 60, divisor = 1}
 g_marc_units[3] = {name="marc-transport-belt", localized_name = {"marc-transport-belt"}, multiplier = 3, divisor = 40}
-g_marc_units[4] = {name="marc-fast-transport-belt", localized_name = {"marc-fast-transport-belt"}, multiplier = 2, divisor = 40}
+g_marc_units[4] = {name="marc-fast-transport-belt", localized_name = {"marc-fast-transport-belt"}, multiplier = 3, divisor = 80}
 g_marc_units[5] = {name="marc-express-transport-belt", localized_name = {"marc-express-transport-belt"}, multiplier = 1, divisor = 40}
 g_marc_units_count = 5
 
@@ -445,6 +445,8 @@ script.on_event(defines.events.on_player_selected_area,
 		-- for all the machines selected, calculate consumption/production rates.
 		-- (note: beacons themselves don't need to be selected, if one is in range
 		--  of a selected machine, it will be considered)
+		local no_recipe_smelters = 0
+		local no_recipe_assemblers = 0
 		for _, entity in ipairs(event.entities)
 		do
 			if entity.type == "assembling-machine" or entity.type == "furnace"
@@ -458,9 +460,33 @@ script.on_event(defines.events.on_player_selected_area,
 					then
 						beacon_speed_effect = check_beacons(surface, entity, beacon_speed_effect)
 					end
-					calc_assembler(entity, inout_data, beacon_speed_effect)					
+					calc_assembler(entity, inout_data, beacon_speed_effect)	
+				else
+					if entity.type == "assembling-machine"
+					then
+						no_recipe_assemblers = no_recipe_assemblers + 1
+					else
+						no_recipe_smelters = no_recipe_smelters + 1
+					end
 				end
 			end
+		end
+		
+		if no_recipe_assemblers > 0 or no_recipe_smelters > 0
+		then
+			
+			if no_recipe_assemblers > 0 and no_recipe_smelters > 0
+			then
+				player.print({"marc-gui-no-recipe-both", no_recipe_assemblers, no_recipe_smelters})
+			else
+				if no_recipe_assemblers > 0
+				then
+					player.print({"marc-gui-no-recipe-assemblers", no_recipe_assemblers})				
+				else
+					player.print({"marc-gui-no-recipe-smelters", no_recipe_smelters})
+				end
+			end
+			
 		end
 		
 		-- save so if user changes units dropdown, we can recalculate the gui

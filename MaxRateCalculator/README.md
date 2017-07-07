@@ -19,3 +19,11 @@ side of the Factorio window, in items per second, and items per minute.
 ### 0.1.4
 * Calculates production/consumption for furnaces (but not fuel)
 * Beacon effectivity no longer hardcoded
+
+### 1.0.5
+* Dropdown list lets user select rate units
+* Rate per machine and surplus/deficit number of machines calculated
+
+### 1.0.5
+* Fix red belt calculation
+* Add warning if assemblers/furnaces have no recipe
