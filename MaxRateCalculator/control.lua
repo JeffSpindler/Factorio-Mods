@@ -10,20 +10,29 @@
 g_marc_units = {}
 
 
-g_marc_units[1] = {name="marc-gui-persec", localized_name = {"marc-gui-persec"}, multiplier = 1, divisor = 1}
-g_marc_units[2] = {name="marc-gui-permin", localized_name = {"marc-gui-permin"}, multiplier = 60, divisor = 1}
-g_marc_units[3] = {name="marc-transport-belt", localized_name = {"marc-transport-belt"}, multiplier = 3, divisor = 40}
-g_marc_units[4] = {name="marc-fast-transport-belt", localized_name = {"marc-fast-transport-belt"}, multiplier = 3, divisor = 80}
-g_marc_units[5] = {name="marc-express-transport-belt", localized_name = {"marc-express-transport-belt"}, multiplier = 1, divisor = 40}
-g_marc_units_count = 5
+g_marc_units[1] = {name="marc-gui-persec", 			localized_name = {"marc-gui-persec"}, 			multiplier = 1, divisor = 1, infotype="time"}
+g_marc_units[2] = {name="marc-gui-permin", 			localized_name = {"marc-gui-permin"}, 			multiplier = 60, divisor = 1, infotype="time"}
+g_marc_units[3] = {name="marc-transport-belt", 		localized_name = {"marc-transport-belt"}, 		multiplier = 3, divisor = 40, infotype="transport"}
+g_marc_units[4] = {name="marc-fast-transport-belt", localized_name = {"marc-fast-transport-belt"}, 	multiplier = 3, divisor = 80, infotype="transport"}
+g_marc_units[5] = {name="marc-express-transport-belt", localized_name = {"marc-express-transport-belt"}, multiplier = 1, divisor = 40, infotype="transport"}
+g_marc_units[6] = {name="marc-burner-inserter", 	localized_name = {"marc-burner-inserter"}, 		multiplier = 3, divisor = 1.76, infotype="inserter"} -- divisor from https://wiki.factorio.com/Inserters
+g_marc_units[7] = {name="marc-basic-inserter", 		localized_name = {"marc-basic-inserter"}, 		multiplier = 3, divisor = 2.50, infotype="inserter"}
+g_marc_units[8] = {name="marc-long-inserter", 		localized_name = {"marc-long-inserter"}, 		multiplier = 3, divisor = 3.46, infotype="inserter"}
+g_marc_units[9] = {name="marc-fast-inserter", 		localized_name = {"marc-fast-inserter"}, 		multiplier = 1, divisor = 2.31, infotype="inserter"}
+g_marc_units[10] = {name="marc-stack-inserter", 	localized_name = {"marc-stack-inserter"}, 		multiplier = 12, divisor = 27.70, infotype="stack-inserter"}
+g_marc_units_count = 10
 
 -- string formats so numbers are displayed in a consistent way
 local persec_format = "%16.3f"
 local permin_format = "%16.1f"
 
 
-local function build_gui_row(guirow, name, count, rownum)
-
+local function build_gui_row(guirow, name, count, rownum, machine_count)
+	if machine_count == nil
+	then
+		machine_count = 0
+	end
+	
 	proto = game.item_prototypes[name]
 	item_or_fluid = "item"
 	if proto == nil
@@ -32,14 +41,8 @@ local function build_gui_row(guirow, name, count, rownum)
 		proto = game.fluid_prototypes[name]
 	end
 	localized_name = proto.localised_name
-
---[[
-	guirow.add({type = "sprite-button", sprite =  item_or_fluid .. "/" .. name, name = "marc_sprite" .. rownum, style = "sprite_obj_marc_style", tooltip = localized_name})
-	guirow.add({type = "label", name = "marc_per_sec" .. rownum, caption = string.format(persec_format, count) })
-	guirow.add({type = "label", name = "marc_per_min" .. rownum, caption = string.format(permin_format, count * 60) })
-]]--	
 	
-	guirow.add({type = "sprite-button", sprite =  item_or_fluid .. "/" .. name, name = "marc_sprite" .. rownum, style = "sprite_obj_marc_style", tooltip = localized_name})
+	guirow.add({type = "sprite-button", sprite =  item_or_fluid .. "/" .. name, name = "marc_sprite" .. rownum, style = "sprite_obj_marc_style", tooltip = {"marc-gui-tt-item-sprite",localized_name, machine_count}})
 	guirow.add({type = "label", name = "marc_per_min" .. rownum, caption = string.format(persec_format, count ), tooltip={"marc-gui-tt-rate"} })
 
 
@@ -48,23 +51,7 @@ end
 local function build_units_dropdown_list()
 
 	local item_list = {}
-	--[[global.marc_units = global.marc_units or {}
-	
-	local unit_name
-	local listix = 1
-	
-	unit_name = {"marc-gui-persec"}
-	item_list[1] = unit_name
-	-- game.print("unit_name is " .. unit_name)
-	listix = listix + 1
-	global.marc_units[unit_name] = {{multiplicand = 1}}
-	
-	unit_name = {"marc-gui-permin"}
-	-- game.print("unit_name is " .. unit_name)
-	item_list[2] = unit_name
-	listix = listix + 1
-	global.marc_units[unit_name] = {{multiplicand = 60}}
-	]]--
+
 	
 	local listix = 1
 	for _, marc_unit in ipairs(g_marc_units)
@@ -85,6 +72,7 @@ local function write_marc_gui(player, inout_data)
 	local inputs = inout_data.inputs
 	local outputs = inout_data.outputs
 	local machines = inout_data.machines
+	local machines_fed = inout_data.machines_fed or {}
 	
 	-- count input, output items and number in common between them
 	local input_items = 0
@@ -151,6 +139,19 @@ local function write_marc_gui(player, inout_data)
 	-- what units are we displaying in?
 	local selected = player.gui.left.marc_gui_top.marc_gui_upper.maxrate_units.selected_index
 	local unit_entry = g_marc_units[selected]
+	local divisor = unit_entry.divisor
+	local multiplier = unit_entry.multiplier
+	if unit_entry.infotype == "inserter"
+	then
+		local old_div = divisor
+		stack_size = player.force.inserter_stack_size_bonus + 1
+		divisor = divisor * stack_size 
+	elseif unit_entry.infotype == "stack-inserter"
+	then
+		stack_size = player.force.stack_inserter_capacity_bonus + 1
+		local old_div = divisor
+		divisor = divisor * stack_size 
+	end
 
 	-- Input ingredients
 	--
@@ -175,8 +176,8 @@ local function write_marc_gui(player, inout_data)
 		local count
 		for name, count in pairs(inputs) 
 		do
-			local scaled_count = unit_entry.multiplier*count/unit_entry.divisor
-			build_gui_row(gui_inrows, name, scaled_count, rownum)
+			local scaled_count = multiplier*count/divisor
+			build_gui_row(gui_inrows, name, scaled_count, rownum, machines_fed[name]) 
 			rownum = rownum+1		
 		end
 	end
@@ -225,10 +226,10 @@ local function write_marc_gui(player, inout_data)
 		local rownum = 1
 		for name, count in pairs(outputs) 
 		do
-			local scaled_count = unit_entry.multiplier*count/unit_entry.divisor
-			build_gui_row(gui_outrows, name, scaled_count, rownum)
+			local scaled_count = multiplier*count/divisor
+			build_gui_row(gui_outrows, name, scaled_count, rownum, machines[name])
 			local average_per_machine = count/machines[name]
-			local scaled_average_per_machine = unit_entry.multiplier*average_per_machine/unit_entry.divisor
+			local scaled_average_per_machine = multiplier*average_per_machine/divisor
 			gui_outrows.add({type = "label", name = "marc_machine_rate" .. rownum, caption = string.format( persec_format,scaled_average_per_machine), tooltip={"marc-gui-tt-items-per-machine"} })			
 
 			-- add extra columns if an item appears in both inputs and outputs
@@ -237,7 +238,7 @@ local function write_marc_gui(player, inout_data)
 			if input_count ~= nil
 			then
 				local net_difference = (count - input_count)
-				local net_count = unit_entry.multiplier*net_difference/unit_entry.divisor
+				local net_count = multiplier*net_difference/divisor
 				gui_outrows.add({type = "label", name = "marc_net_per_min" .. rownum, caption = string.format( persec_format, net_count ), tooltip={"marc-gui-tt-net-rate"}})
 				
 				local net_machines = net_difference/average_per_machine
@@ -379,8 +380,10 @@ local function calc_assembler(entity, inout_data, beacon_speed_effect)
 		if inout_data.inputs[ingred.name] ~= nil
 		then
 			inout_data.inputs[ingred.name] = inout_data.inputs[ingred.name] + amount
+			inout_data.machines_fed[ingred.name] = inout_data.machines_fed[ingred.name] + 1
 		else
 			inout_data.inputs[ingred.name] = amount
+			inout_data.machines_fed[ingred.name] = 1
 		end
 	end
 	
@@ -441,7 +444,7 @@ script.on_event(defines.events.on_player_selected_area,
 		local player = game.players[event.player_index]
 		local surface = player.surface
 		
-		local inout_data = { inputs={}, outputs = {}, machines = {} }
+		local inout_data = { inputs={}, outputs = {}, machines = {}, machines_fed = {} }
 		-- for all the machines selected, calculate consumption/production rates.
 		-- (note: beacons themselves don't need to be selected, if one is in range
 		--  of a selected machine, it will be considered)
@@ -449,10 +452,16 @@ script.on_event(defines.events.on_player_selected_area,
 		local no_recipe_assemblers = 0
 		for _, entity in ipairs(event.entities)
 		do
-			if entity.type == "assembling-machine" or entity.type == "furnace"
+			-- game.print("Found entity " .. entity.name  )
+			if entity.energy ~= nil
 			then
-				-- game.print("Found entity " .. entity.name  )
-
+				-- game.print("Has energy " .. entity.energy )
+			else
+				-- game.print("No energy")
+			end
+			
+			if entity.type == "assembling-machine" or entity.type == "furnace"
+			then		
 				if entity.recipe ~= nil
 				then
 					local beacon_speed_effect = 0

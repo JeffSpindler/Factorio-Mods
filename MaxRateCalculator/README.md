@@ -24,6 +24,10 @@ side of the Factorio window, in items per second, and items per minute.
 * Dropdown list lets user select rate units
 * Rate per machine and surplus/deficit number of machines calculated
 
-### 1.0.5
+### 1.0.6
 * Fix red belt calculation
 * Add warning if assemblers/furnaces have no recipe
+
+### 1.1.7
+* Adds calculations in terms of inserters
+* Tooltip on item icons shows num of machines using/producing the item in the selection
