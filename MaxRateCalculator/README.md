@@ -31,3 +31,9 @@ side of the Factorio window, in items per second, and items per minute.
 ### 1.1.7
 * Adds calculations in terms of inserters
 * Tooltip on item icons shows num of machines using/producing the item in the selection
+
+### 1.2.8
+* Vertical scroll bars if too many items
+* Don't show rates of fluids on belts, in inserters
+* Added rate calculations for train wagons per minute and per hour
+* Items are sorted alphabetically

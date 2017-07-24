@@ -22,6 +22,21 @@ default_gui.table_marc_style =
 	resize_to_row_height = false,
 }
 
+default_gui.scroll_pane_marc_style =
+{
+	type = "scroll_pane_style",
+	parent="scroll_pane_style",
+	flow_style =
+	{
+		parent = "flow_style"
+	},
+	resize_row_to_width = true,
+	resize_to_row_height = false,
+	minimal_height=128,
+	maximal_height=400,
+	max_on_row = 1,
+}
+
 data:extend(
 {
 	{

@@ -20,34 +20,88 @@ g_marc_units[7] = {name="marc-basic-inserter", 		localized_name = {"marc-basic-i
 g_marc_units[8] = {name="marc-long-inserter", 		localized_name = {"marc-long-inserter"}, 		multiplier = 3, divisor = 3.46, infotype="inserter"}
 g_marc_units[9] = {name="marc-fast-inserter", 		localized_name = {"marc-fast-inserter"}, 		multiplier = 1, divisor = 2.31, infotype="inserter"}
 g_marc_units[10] = {name="marc-stack-inserter", 	localized_name = {"marc-stack-inserter"}, 		multiplier = 12, divisor = 27.70, infotype="stack-inserter"}
-g_marc_units_count = 10
+g_marc_units[11] = {name="marc-wagon-permin", 	localized_name = {"marc-wagon-permin"}, 		multiplier = 60, divisor =1 , infotype="wagon"}
+g_marc_units[12] = {name="marc-wagon-perhr", 	localized_name = {"marc-wagon-perhr"}, 		multiplier = 3600, divisor =1 , infotype="wagon"}
+g_marc_units_count = 12
 
 -- string formats so numbers are displayed in a consistent way
 local persec_format = "%16.3f"
 local permin_format = "%16.1f"
 
+local function boolstr(bool)
+	if bool
+	then return "T"
+	else return "F"
+	end
+end
 
-local function build_gui_row(guirow, name, count, rownum, machine_count)
+local function compatible_units(item_or_fluid, unit_type)
+
+	if item_or_fluid == "fluid" and
+			(unit_type ~= "time") and
+			(unit_type ~= "wagon")
+	then		
+		return false
+	else
+		return true
+	end
+
+end
+
+-- Return a flag indicating if name refers to an item (such as iron-plate) or a fluid
+local function get_item_or_fluid(name)
+	local proto = game.item_prototypes[name]
+	item_or_fluid = "item"
+	if proto == nil
+	then
+		item_or_fluid = "fluid"
+	end
+	return item_or_fluid
+end
+
+
+-- return the prototype
+local function get_proto(name)
+
+	if get_item_or_fluid(name) == "item"
+	then
+		return game.item_prototypes[name]
+	else
+		return game.fluid_prototypes[name]
+	end
+
+end
+
+-- fill out the first part of a row with the icon and the rate.  Used for both inputs and outputs
+local function build_gui_row(guirow, name, count, rownum, machine_count, unit_type)
 	if machine_count == nil
 	then
 		machine_count = 0
 	end
 	
-	proto = game.item_prototypes[name]
-	item_or_fluid = "item"
-	if proto == nil
-	then
-		item_or_fluid = "fluid"
-		proto = game.fluid_prototypes[name]
+	local proto = get_proto(name)
+	if proto == nil	-- not sure what this is
+		then
+			return false
 	end
+	
+	local item_or_fluid = get_item_or_fluid(name)
+	
+	if not compatible_units(item_or_fluid, unit_type)
+	then
+		-- showing inserter/belt rate for a fluid makes no sense
+		return false
+	end
+	
 	localized_name = proto.localised_name
 	
 	guirow.add({type = "sprite-button", sprite =  item_or_fluid .. "/" .. name, name = "marc_sprite" .. rownum, style = "sprite_obj_marc_style", tooltip = {"marc-gui-tt-item-sprite",localized_name, machine_count}})
 	guirow.add({type = "label", name = "marc_per_min" .. rownum, caption = string.format(persec_format, count ), tooltip={"marc-gui-tt-rate"} })
 
-
+	return true
 end
 
+-- create the list of rate units the user can choose from
 local function build_units_dropdown_list()
 
 	local item_list = {}
@@ -62,7 +116,67 @@ local function build_units_dropdown_list()
 	
 	
 	return item_list
+end
+
+
+-- scale the count based on the unit.
+-- some rate units require more than just the multiplier/divisor in the g_marc_units table
+local function scale_rate(player, name, count)
+
+	local selected = player.gui.left.marc_gui_top.marc_gui_upper.maxrate_units.selected_index
+	local unit_entry = g_marc_units[selected]
+	local divisor = unit_entry.divisor
+	local multiplier = unit_entry.multiplier
+	local unit_type = unit_entry.infotype
 	
+	-- game.print("scale_rate " .. name .. " mult " .. multiplier .. " div " .. divisor .. " count " .. count)
+
+
+	local proto = get_proto(name)
+	if proto == nil	-- not sure what this is
+	then
+		game.print("neither item nor fluid?")
+		return -1
+	end
+	local item_or_fluid = get_item_or_fluid(name)
+	
+	if not compatible_units(item_or_fluid, unit_type)
+	then
+		-- game.print("not compatible:" .. item_or_fluid .. " name " .. name .. " unit_type" .. unit_type)
+		-- showing inserter/belt rate for a fluid makes no sense
+		return -1
+	end
+
+
+	if unit_type == "inserter"
+	then
+		local old_div = divisor
+		stack_size = player.force.inserter_stack_size_bonus + 1
+		divisor = divisor * stack_size 
+	elseif unit_type == "stack-inserter"
+	then
+		stack_size = player.force.stack_inserter_capacity_bonus + 1
+		local old_div = divisor
+		divisor = divisor * stack_size 
+	elseif unit_type == "wagon"
+		then
+			local total_capacity
+	
+			if item_or_fluid == "item"
+			then
+				cargo_wagon_proto = game.entity_prototypes["cargo-wagon"]
+				total_capacity = cargo_wagon_proto.get_inventory_size(1) * proto.stack_size
+			else
+				-- fluid_wagon_proto = game.entity_prototypes["fluid-wagon"]
+				-- game.print("fluid wagon holds " .. fluid_wagon_proto.fluid_box.get_capacity(1))  -- .. or some such
+				total_capacity = 25000 * 3		-- copied from base/prototypes/entity/entities.lua for name="fluid-wagon"
+			end
+			divisor = divisor * total_capacity
+			-- game.print("divisor " .. divisor .. " total_capacity " .. total_capacity .. " multiplier " .. multiplier )
+			debug = true
+	end
+	-- game.print("scale_rate now " .. name .. " mult " .. multiplier .. " div " .. divisor .. " count " .. count)
+	return multiplier*count/divisor
 end
 
 -- Puts the calculated info into a frame on the left side of the window
@@ -141,27 +255,19 @@ local function write_marc_gui(player, inout_data)
 	local unit_entry = g_marc_units[selected]
 	local divisor = unit_entry.divisor
 	local multiplier = unit_entry.multiplier
-	if unit_entry.infotype == "inserter"
-	then
-		local old_div = divisor
-		stack_size = player.force.inserter_stack_size_bonus + 1
-		divisor = divisor * stack_size 
-	elseif unit_entry.infotype == "stack-inserter"
-	then
-		stack_size = player.force.stack_inserter_capacity_bonus + 1
-		local old_div = divisor
-		divisor = divisor * stack_size 
-	end
+	local unit_type = unit_entry.infotype
 
+	
 	-- Input ingredients
 	--
 	if input_items > 0
 	then
 		-- frame to hold the rows of input items
 		gui_input_frame = marc_gui.add({type = "frame", name = "marc_inputs", direction = "vertical", caption = {"marc-gui-inputs"}})
+		gui_input_scrollpane = gui_input_frame.add({type = "scroll-pane", name = "marc_inputs_pane", vertical_scroll_policy = "auto", style = "scroll_pane_marc_style",  direction = "vertical", caption = {"marc-gui-inputs"}})
 		
 		-- three columns - item icon, rate per second, rate per minute
-		gui_inrows= gui_input_frame.add({type = "table", name = "marc_inrows", style = table_marc_style, colspan = 2 })
+		gui_inrows= gui_input_scrollpane.add({type = "table", name = "marc_inrows", style = table_marc_style, colspan = 2 })
 		gui_inrows.style.column_alignments[2] = "right"	-- numbers look best right justified
 		
 		-- column headers
@@ -169,15 +275,21 @@ local function write_marc_gui(player, inout_data)
 		gui_inrows.add({type = "label", name = "marc_header_rate", caption = {"marc-gui-rate"}, tooltip={"marc-gui-tt-rate-input"} })
 		
 
-		-- add a row for each input item, with sexy icon (sprite button), rate used per sec, rate used per minute
+		-- add a row for each input item, with sexy icon (sprite button), rate
 		
 		local rownum = 1
 		local name
 		local count
-		for name, count in pairs(inputs) 
+		local sorted_names = {}
+
+		for name in pairs(inputs) do table.insert(sorted_names, name) end
+		table.sort(sorted_names)
+		
+		for i, name in ipairs(sorted_names)
 		do
-			local scaled_count = multiplier*count/divisor
-			build_gui_row(gui_inrows, name, scaled_count, rownum, machines_fed[name]) 
+			count = inputs[name]
+			local scaled_count = scale_rate(player, name, count)
+			build_gui_row(gui_inrows, name, scaled_count, rownum, machines_fed[name], unit_type) 
 			rownum = rownum+1		
 		end
 	end
@@ -187,7 +299,8 @@ local function write_marc_gui(player, inout_data)
 	if output_items > 0
 	then
 		gui_output_frame = marc_gui.add({type = "frame", name = "marc_outputs", direction = "vertical", caption = {"marc-gui-outputs"}})
-		
+		gui_output_scrollpane = gui_output_frame.add({type = "scroll-pane", name = "marc_outputs_pane", vertical_scroll_policy = "auto", style = "scroll_pane_marc_style",  direction = "vertical", caption = {"marc-gui-inputs"}})
+
 		-- if there were items both consumed and produced, we'll have two more columns to show the net result
 		if both_input_and_output_items > 0
 		then
@@ -195,7 +308,7 @@ local function write_marc_gui(player, inout_data)
 		else
 			cols = 3
 		end
-		gui_outrows = gui_output_frame.add({type = "table", name = "marc_outrows", style = table_marc_style, colspan = cols })
+		gui_outrows = gui_output_scrollpane.add({type = "table", name = "marc_outrows", style = table_marc_style, colspan = cols })
 		
 		-- right justify the numbers
 		for i=1,cols
@@ -224,32 +337,41 @@ local function write_marc_gui(player, inout_data)
 		end
 
 		local rownum = 1
-		for name, count in pairs(outputs) 
-		do
-			local scaled_count = multiplier*count/divisor
-			build_gui_row(gui_outrows, name, scaled_count, rownum, machines[name])
-			local average_per_machine = count/machines[name]
-			local scaled_average_per_machine = multiplier*average_per_machine/divisor
-			gui_outrows.add({type = "label", name = "marc_machine_rate" .. rownum, caption = string.format( persec_format,scaled_average_per_machine), tooltip={"marc-gui-tt-items-per-machine"} })			
+		local sorted_names = {}
 
-			-- add extra columns if an item appears in both inputs and outputs
-			
-			input_count = inout_data.inputs[name]
-			if input_count ~= nil
+		for name in pairs(outputs) do table.insert(sorted_names, name) end
+		table.sort(sorted_names)
+		
+		for i, name in ipairs(sorted_names)
+		do
+			count = outputs[name]
+			local scaled_count = scale_rate(player, name, count)
+			local legit = build_gui_row(gui_outrows, name, scaled_count, rownum, machines[name], unit_type)
+			if legit	-- only add to row if unit_type is compatible with the item
 			then
-				local net_difference = (count - input_count)
-				local net_count = multiplier*net_difference/divisor
-				gui_outrows.add({type = "label", name = "marc_net_per_min" .. rownum, caption = string.format( persec_format, net_count ), tooltip={"marc-gui-tt-net-rate"}})
-				
-				local net_machines = net_difference/average_per_machine
-				gui_outrows.add({type = "label", name = "marc_net_machines" .. rownum, caption = string.format( persec_format, net_machines  ), tooltip={"marc-gui-tt-net-machines"}})
-			elseif both_input_and_output_items > 0
-			then 
-				-- five column display, but this item doesn't have net info
-				gui_outrows.add({type = "label", name = "marc_net_per_min" .. rownum, caption = "" })
-				gui_outrows.add({type = "label", name = "marc_net_machines" .. rownum, caption = "" })
+				local average_per_machine = count/machines[name]
+				local scaled_average_per_machine = scale_rate(player, name, average_per_machine) -- multiplier*average_per_machine/divisor
+				gui_outrows.add({type = "label", name = "marc_machine_rate" .. rownum, caption = string.format( persec_format,scaled_average_per_machine), tooltip={"marc-gui-tt-items-per-machine"} })			
+
+				-- add extra columns if an item appears in both inputs and outputs
+
+				input_count = inout_data.inputs[name]
+				if input_count ~= nil
+				then
+					local net_difference = (count - input_count)
+					local net_count = scale_rate(player, name,net_difference)
+					gui_outrows.add({type = "label", name = "marc_net_per_min" .. rownum, caption = string.format( persec_format, net_count ), tooltip={"marc-gui-tt-net-rate"}})
+
+					local net_machines = net_difference/average_per_machine
+					gui_outrows.add({type = "label", name = "marc_net_machines" .. rownum, caption = string.format( persec_format, net_machines  ), tooltip={"marc-gui-tt-net-machines"}})
+				elseif both_input_and_output_items > 0
+				then 
+					-- five column display, but this item doesn't have net info
+					gui_outrows.add({type = "label", name = "marc_net_per_min" .. rownum, caption = "" })
+					gui_outrows.add({type = "label", name = "marc_net_machines" .. rownum, caption = "" })
+				end
+				rownum = rownum+1
 			end
-			rownum = rownum+1
 		end
 	end
 
@@ -359,6 +481,7 @@ local function calc_assembler(entity, inout_data, beacon_speed_effect)
 	modeffects = calc_mods(entity, modeffects, effectivity)
 
 	-- adjust crafting speed based on modules and beacons
+	-- game.print( "calc_assembler cspeed " .. crafting_speed .. " modspeed " .. modeffects.speed .. " beacon_speed_effect " .. beacon_speed_effect)
 	crafting_speed = crafting_speed * ( 1 + modeffects.speed + beacon_speed_effect)
 	-- how long does the item take to craft if no modules and crafting speed was 1?  It's in the recipe.energy!
 	crafting_time = entity.recipe.energy
@@ -415,7 +538,7 @@ local function calc_assembler(entity, inout_data, beacon_speed_effect)
 			-- handle if Product has probability not amount, like for centrifuges sometimes
 			amount = prod.probability * (prod.amount_min + prod.amount_max) / 2
 		end
-		
+		-- game.print("calc_assembler " .. prod.name .. " amount " .. amount .. " modeffects " .. ( 1 + modeffects.prod) .. " cspeed " .. crafting_speed .. " crafting_time" .. crafting_time)
 		amount = amount * ( 1 + modeffects.prod) *  crafting_speed / crafting_time
 		if inout_data.outputs[prod.name] ~= nil
 		then
@@ -425,8 +548,6 @@ local function calc_assembler(entity, inout_data, beacon_speed_effect)
 			inout_data.outputs[prod.name] = amount
 			inout_data.machines[prod.name] =  1
 		end
-		 
-		
 	end
 	
 end

@@ -1,7 +1,7 @@
 {
   "name": "MaxRateCalculator",
   "author": "Theanderblast",
-  "version": "1.1.7",
+  "version": "1.2.8",
   "title": "Max Rate Calculator",
   "homepage": "",
   "description": "Calculates maximum consumption/prodution rates of assemblers, plants, etc.",
