@@ -37,3 +37,6 @@ side of the Factorio window, in items per second, and items per minute.
 * Don't show rates of fluids on belts, in inserters
 * Added rate calculations for train wagons per minute and per hour
 * Items are sorted alphabetically
+
+### 1.2.9
+* Use LuaEntityPrototype::fluid_capacity for fluid-wagon (surfaced in 0.15.32) rather than hardcoded 75000

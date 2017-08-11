@@ -1,11 +1,11 @@
 {
   "name": "MaxRateCalculator",
   "author": "Theanderblast",
-  "version": "1.2.8",
+  "version": "1.2.9",
   "title": "Max Rate Calculator",
   "homepage": "",
   "description": "Calculates maximum consumption/prodution rates of assemblers, plants, etc.",
   "factorio_version":"0.15",
-  "dependencies": ["base >= 0.15.0"]
+  "dependencies": ["base >= 0.15.32"]
 
 }

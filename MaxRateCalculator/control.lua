@@ -167,9 +167,8 @@ local function scale_rate(player, name, count)
 				cargo_wagon_proto = game.entity_prototypes["cargo-wagon"]
 				total_capacity = cargo_wagon_proto.get_inventory_size(1) * proto.stack_size
 			else
-				-- fluid_wagon_proto = game.entity_prototypes["fluid-wagon"]
-				-- game.print("fluid wagon holds " .. fluid_wagon_proto.fluid_box.get_capacity(1))  -- .. or some such
-				total_capacity = 25000 * 3		-- copied from base/prototypes/entity/entities.lua for name="fluid-wagon"
+				fluid_wagon_proto = game.entity_prototypes["fluid-wagon"]
+				total_capacity = fluid_wagon_proto.fluid_capacity
 			end
 			divisor = divisor * total_capacity
 			-- game.print("divisor " .. divisor .. " total_capacity " .. total_capacity .. " multiplier " .. multiplier )
@@ -693,6 +692,7 @@ local function on_gui_selection(event)
 		open_gui(event, global.marc_inout_data)
 	end
 end
+
 
 script.on_event(defines.events.on_gui_selection_state_changed, on_gui_selection)
 
