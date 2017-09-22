@@ -40,3 +40,4 @@ side of the Factorio window, in items per second, and items per minute.
 
 ### 1.2.9
 * Use LuaEntityPrototype::fluid_capacity for fluid-wagon (surfaced in 0.15.32) rather than hardcoded 75000
+* Use beacon.prototype.distribution_effectivity rather than hardcoded 0.5 (also from 0.15.32)

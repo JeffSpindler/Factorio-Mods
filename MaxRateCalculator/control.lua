@@ -458,8 +458,8 @@ local function check_beacons(surface, entity)
 	do	
 		-- game.print(" beacon area is " .. beacon.prototype.supply_area_distance .. " at " .. beacon.position.x .. "," .. beacon.position.y)
 		beacons = beacons + 1	
-		-- local effectivity = beacon.prototype.distribution_effectivity
-		local effectivity = 0.5 -- beacon.prototype.distribution_effectivity exists, but isn't readable
+		local effectivity = beacon.prototype.distribution_effectivity
+		-- game.print("effectivity is " .. effectivity)
 		calc_mods( beacon, modeffects, effectivity)
 	end
 	
