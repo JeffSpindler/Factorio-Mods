@@ -5,6 +5,8 @@ global.curhist_debug = global.curhist_debug or false
 
 curhist_max_num_in_history_list = 6
 
+
+ignore_list = ignore_list or { "blueprint", "blueprint-book", "deconstruction-planner", "max-rate-calculator"}
 -- ----------------------------------------------------------------
 
 local function boolstr(b)
@@ -185,6 +187,21 @@ end
 
 -- ----------------------------------------------------------------
 
+local function should_ignore_this(name)
+	for _,ignore_me in ipairs(ignore_list)
+	do
+		if ignore_me == name
+		then
+			return true
+		end
+	end
+
+	return false
+end
+
+
+-- ----------------------------------------------------------------
+
 local function on_player_cursor_stack_changed(event)
 
 	global.curhist_bp_next_id = global.curhist_bp_next_id or 4000
@@ -219,14 +236,9 @@ local function on_player_cursor_stack_changed(event)
 
 	local name = cursor_stack.name
 	debug_print("player cursor stack changed - " .. name)
-	if name == "max-rate-calculator"
-	then
-		return
-	end
 	
-	if name == "blueprint" or name == "blueprint-book"
+	if should_ignore_this(name)
 	then
-		debug_print("on_player_cursor_stack_changed ignoring " .. name )
 		return
 	end
 		
