@@ -23,10 +23,14 @@ g_marc_units[10] = {name="marc-stack-inserter", 	localized_name = {"marc-stack-i
 g_marc_units[11] = {name="marc-wagon-permin", 	localized_name = {"marc-wagon-permin"}, 		multiplier = 60, divisor =1 , infotype="wagon"}
 g_marc_units[12] = {name="marc-wagon-perhr", 	localized_name = {"marc-wagon-perhr"}, 		multiplier = 3600, divisor =1 , infotype="wagon"}
 g_marc_units_count = 12
+g_marc_units_default = 2 -- per minutes is the default
 
 -- string formats so numbers are displayed in a consistent way
 local persec_format = "%16.3f"
 local permin_format = "%16.1f"
+
+-- ----------------------------------------------------------------
+
 
 local function boolstr(bool)
 	if bool
@@ -34,6 +38,17 @@ local function boolstr(bool)
 	else return "F"
 	end
 end
+
+-- ----------------------------------------------------------------
+
+function debug_print(str)
+	if global.marc_debug
+	then
+		game.print(str)
+	end
+end
+
+-- ----------------------------------------------------------------
 
 local function compatible_units(item_or_fluid, unit_type)
 
@@ -129,20 +144,20 @@ local function scale_rate(player, name, count)
 	local multiplier = unit_entry.multiplier
 	local unit_type = unit_entry.infotype
 	
-	-- game.print("scale_rate " .. name .. " mult " .. multiplier .. " div " .. divisor .. " count " .. count)
+	debug_print("scale_rate " .. name .. " mult " .. multiplier .. " div " .. divisor .. " count " .. count)
 
 
 	local proto = get_proto(name)
 	if proto == nil	-- not sure what this is
 	then
-		game.print("neither item nor fluid?")
+		debug_print("neither item nor fluid?")
 		return -1
 	end
 	local item_or_fluid = get_item_or_fluid(name)
 	
 	if not compatible_units(item_or_fluid, unit_type)
 	then
-		-- game.print("not compatible:" .. item_or_fluid .. " name " .. name .. " unit_type" .. unit_type)
+		debug_print("not compatible:" .. item_or_fluid .. " name " .. name .. " unit_type" .. unit_type)
 		-- showing inserter/belt rate for a fluid makes no sense
 		return -1
 	end
@@ -171,10 +186,10 @@ local function scale_rate(player, name, count)
 				total_capacity = fluid_wagon_proto.fluid_capacity
 			end
 			divisor = divisor * total_capacity
-			-- game.print("divisor " .. divisor .. " total_capacity " .. total_capacity .. " multiplier " .. multiplier )
+			debug_print("divisor " .. divisor .. " total_capacity " .. total_capacity .. " multiplier " .. multiplier )
 			debug = true
 	end
-	-- game.print("scale_rate now " .. name .. " mult " .. multiplier .. " div " .. divisor .. " count " .. count)
+	debug_print("scale_rate now " .. name .. " mult " .. multiplier .. " div " .. divisor .. " count " .. count)
 	return multiplier*count/divisor
 end
 
@@ -393,20 +408,20 @@ end
 -- calculate the speed and productivity effects of a single module
 local function calc_mod( modname, modeffects, modquant, effectivity )
 	protoeffects = game.item_prototypes[modname].module_effects
-	-- game.print("mod is " .. modname .. " quantity " .. modquant)
+	debug_print("mod is " .. modname .. " quantity " .. modquant)
 	for effectname,effectvals in pairs(protoeffects)
 	do
-		-- game.print("...effectname is " .. effectname .. " modquant " .. modquant)
+		debug_print("...effectname is " .. effectname .. " modquant " .. modquant)
 		for _,bonamount in pairs(effectvals) -- first item in pair seems to be always "bonus"
 		do
-			-- game.print("...effectname,bonix,bon " .. effectname ..  "," .. bonamount)
+			debug_print("...effectname,bonix,bon " .. effectname ..  "," .. bonamount)
 			if effectname == "speed"
 			then
-				-- game.print("...adjust speed by " .. ( bonamount * modquant ))
+				debug_print("...adjust speed by " .. ( bonamount * modquant ))
 				modeffects.speed = modeffects.speed + ( bonamount * modquant * effectivity)
 			elseif effectname == "productivity"
 			then
-				-- game.print("...adjust productivity by " .. ( bonamount * modquant ))
+				debug_print("...adjust productivity by " .. ( bonamount * modquant ))
 				modeffects.prod = modeffects.prod + (bonamount * modquant  * effectivity)
 			end
 		end
@@ -422,8 +437,8 @@ local function calc_mods(entity, modeffects, effectivity)
 
 	for modname,modquant in pairs(modcontents)
 	do
-		-- game.print("calc_mods proto is " .. game.item_prototypes[modname].name)
-		-- game.print("calc_mods modname,modquant " .. modname .. "," .. modquant)
+		debug_print("calc_mods proto is " .. game.item_prototypes[modname].name)
+		debug_print("calc_mods modname,modquant " .. modname .. "," .. modquant)
 		
 		calc_mod(modname, modeffects, modquant, effectivity)
 		ix = ix + 1
@@ -433,44 +448,126 @@ local function calc_mods(entity, modeffects, effectivity)
 	return modeffects
 end
 
+local function point_in_bounding_box(b, x, y)
+	
+	return x > b.left_top.x and x < b.right_bottom.x and
+	   y > b.left_top.y and y < b.right_bottom.y
+end
+
+local function print_bounding_box(name, b)
+	debug_print(name .. " " .. b.left_top.x .. "," .. b.left_top.y .. " " .. b.right_bottom.x .. "," .. b.right_bottom.y)
+end
+
+local function does_box_contain_box(b1, b2)
+	-- this will detect if b2 is inside b1
+	-- but won't if b1 is inside b2
+	debug_print("does_box_contain_box? ")
+	-- print_bounding_box(" ...b1", b1)
+	-- print_bounding_box(" ...b2" ,b2)
+	debug_print("===========")
+	local answer = false
+	local b2_left = b2.left_top.x
+	local b2_right = b2.right_bottom.x
+	local b2_top = b2.left_top.y
+	local b2_bottom = b2.right_bottom.y
+	
+	if point_in_bounding_box(b1, b2_left, b2_top) then answer = true end
+	if point_in_bounding_box(b1, b2_left, b2_bottom) then answer = true end
+	if point_in_bounding_box(b1, b2_right, b2_top) then answer = true end
+	if point_in_bounding_box(b1, b2_right, b2_bottom) then answer = true end
+	debug_print("answer is " .. boolstr(answer))
+	debug_print("-------------")
+	return answer
+end
+
+local function is_machine_in_range_of_beacon(entity, beacon)
+	debug_print("is machine in range")
+	local machine_selection_box = entity.prototype.selection_box
+	local beac_dist = game.entity_prototypes[beacon.name].supply_area_distance
+	
+	local beacon_left_top = {x = beacon.prototype.selection_box.left_top.x + beacon.position.x - beac_dist,
+							y = beacon.prototype.selection_box.left_top.y + beacon.position.y - beac_dist}
+	local beacon_right_bottom = {x = beacon.prototype.selection_box.right_bottom.x + beacon.position.x + beac_dist,
+							y = beacon.prototype.selection_box.right_bottom.y + beacon.position.y + beac_dist}
+	local beacon_box = { left_top = beacon_left_top, right_bottom = beacon_right_bottom }
+	
+	local machine_left_top = { x = entity.position.x + machine_selection_box.left_top.x,
+								y = entity.position.y + machine_selection_box.left_top.y }
+	local machine_right_bottom = { x = entity.position.x + machine_selection_box.right_bottom.x,
+								y = entity.position.y + machine_selection_box.right_bottom.y }
+
+	local machine_box = { left_top = machine_left_top, right_bottom = machine_right_bottom }
+	-- print_bounding_box("             machine_box", machine_box)
+	-- print_bounding_box("             beacon_box ", beacon_box)
+	
+	debug_print("call dbcb")
+	local ans = does_box_contain_box(beacon_box, machine_box)
+	debug_print("ans is " .. boolstr(ans))
+	return ans
+end
+
+
+max_beacon_dist = -1
+
 -- calculate effects of beacons.  For our purposes, only speed effects count
 local function check_beacons(surface, entity)
 	
 	local x = entity.position.x
 	local y = entity.position.y
+
 	
-	beacon_dist = game.entity_prototypes["beacon"].supply_area_distance
+	if max_beacon_dist == -1
+	then
+		
+		for _,entity_proto in pairs(game.entity_prototypes)
+		do
+			
+			if entity_proto.type == "beacon"
+			then
+				debug_print("found a beacon " .. entity_proto.name)
+				local distance = game.entity_prototypes[entity_proto.name].supply_area_distance
+				if distance > max_beacon_dist
+				then
+					max_beacon_dist = distance
+				end
+			end
+		end
+		-- max_beacon_dist = game.entity_prototypes["beacon"].supply_area_distance
+		debug_print("beacon distance is " .. max_beacon_dist)
+	end
 	
-	-- game.print("check_beacons searching around " .. x .. "," .. y .. " beacon dist is " .. beacon_dist)
+	debug_print("check_beacons searching around " .. x .. "," .. y .. " beacon dist is " .. max_beacon_dist)
 	machine_box = entity.prototype.selection_box
-	-- game.print("check_beacons box is " .. machine_box.left_top.x .. "," .. machine_box.left_top.y .. " thru " .. machine_box.right_bottom.x .. "," .. machine_box.right_bottom.y)
+	debug_print("check_beacons box is " .. machine_box.left_top.x .. "," .. machine_box.left_top.y .. " thru " .. machine_box.right_bottom.x .. "," .. machine_box.right_bottom.y)
 	modeffects = { speed = 0, prod = 0 }
 
 	local beacons = 0
 	local mods = 0
 
 	-- assumes all beacons have same effect radius
-	search_area = { { x + machine_box.left_top.x - beacon_dist, 	y + machine_box.left_top.y - beacon_dist }, 
-				    { beacon_dist + x + machine_box.right_bottom.x, beacon_dist + y + machine_box.right_bottom.y }}
-	-- game.print(" upper left " .. 	x + machine_box.left_top.x - beacon_dist .. "," .. y + machine_box.left_top.y - beacon_dist)			    
+	search_area = { { x + machine_box.left_top.x - max_beacon_dist, 	y + machine_box.left_top.y - max_beacon_dist }, 
+				    { max_beacon_dist + x + machine_box.right_bottom.x, max_beacon_dist + y + machine_box.right_bottom.y }}
+	debug_print(" upper left " .. 	x + machine_box.left_top.x - max_beacon_dist .. "," .. y + machine_box.left_top.y - max_beacon_dist)			    
 
 	for _,beacon in pairs(surface.find_entities_filtered{ area=search_area, type="beacon"})
 	do	
-		-- game.print(" beacon area is " .. beacon.prototype.supply_area_distance .. " at " .. beacon.position.x .. "," .. beacon.position.y)
-		beacons = beacons + 1	
-		local effectivity = beacon.prototype.distribution_effectivity
-		-- game.print("effectivity is " .. effectivity)
-		calc_mods( beacon, modeffects, effectivity)
+		debug_print("test a beacon")
+		if is_machine_in_range_of_beacon(entity, beacon)
+		then
+			debug_print(" beacon area is " .. beacon.prototype.supply_area_distance .. " at " .. beacon.position.x .. "," .. beacon.position.y)
+			beacons = beacons + 1	
+			local effectivity = beacon.prototype.distribution_effectivity
+			debug_print("effectivity is " .. effectivity)
+			calc_mods( beacon, modeffects, effectivity)
+		end
 	end
 	
-	beacon_speed_effect = modeffects.speed 
-	-- game.print("beacon_speed_effect " .. beacon_speed_effect .. " beacons " .. beacons .. " mods" .. mods)
-	return beacon_speed_effect
+	return modeffects
 
 end
 
 -- for an individual assembler, calculate the rates all the inputs are used at and the outputs are produced at, per second
-local function calc_assembler(entity, inout_data, beacon_speed_effect)
+local function calc_assembler(entity, inout_data, beacon_modeffects)
 
 	-- get the machines base crafting speed, in cycles per second
 	local crafting_speed = entity.prototype.crafting_speed
@@ -480,17 +577,23 @@ local function calc_assembler(entity, inout_data, beacon_speed_effect)
 	modeffects = calc_mods(entity, modeffects, effectivity)
 
 	-- adjust crafting speed based on modules and beacons
-	-- game.print( "calc_assembler cspeed " .. crafting_speed .. " modspeed " .. modeffects.speed .. " beacon_speed_effect " .. beacon_speed_effect)
-	crafting_speed = crafting_speed * ( 1 + modeffects.speed + beacon_speed_effect)
+	local total_speed_effect = modeffects.speed + beacon_modeffects.speed
+	if total_speed_effect < -0.80 -- no worse than 20%
+	then
+		total_speed_effect = -0.80
+	end
+	debug_print( "calc_assembler cspeed " .. crafting_speed .. " modspeed " .. modeffects.speed .. " beacon_modeffects.speed " .. beacon_modeffects.speed .. " total_speed_effect " .. total_speed_effect)
+
+	crafting_speed = crafting_speed * ( 1 + total_speed_effect)
 	-- how long does the item take to craft if no modules and crafting speed was 1?  It's in the recipe.energy!
 	crafting_time = entity.recipe.energy
 	
-	-- game.print("crafting time " .. crafting_time .. " modeffects.speed " .. modeffects.speed .. " beacon_speed_effect " .. beacon_speed_effect )
+	debug_print("crafting time " .. crafting_time .. " modeffects.speed " .. modeffects.speed .. " beacon_modeffects.speed " .. beacon_modeffects.speed )
 	
 	if(crafting_time == 0)
 	then
 		crafting_time = 1
-		game.print("entity.recipe.energy = 0, wtf?")
+		debug_print("entity.recipe.energy = 0, wtf?")
 	end
 	
 
@@ -517,9 +620,9 @@ local function calc_assembler(entity, inout_data, beacon_speed_effect)
 	if fuel_inventory ~= nil
 	then
 		local fuel_name = fuel_inventory[1].name
-		game.print(entity.name  .. " has fuel " .. fuel_name)
+		debug_print(entity.name  .. " has fuel " .. fuel_name)
 		fuel_proto = game.item_prototypes[fuel_name]
-		game.print("fuel value " .. fuel_proto.fuel_value)
+		debug_print("fuel value " .. fuel_proto.fuel_value)
 	end
 	]]--
 	
@@ -528,7 +631,7 @@ local function calc_assembler(entity, inout_data, beacon_speed_effect)
 	-- table
 	for _, prod in ipairs(entity.recipe.products)
 	do
-		-- game.print("prod amount, modeffects.prod " .. prod.name .. " " .. prod.amount .. "," .. modeffects.prod )
+		debug_print("prod amount, modeffects.prod " .. prod.name .. " " .. prod.amount .. "," .. modeffects.prod )
 		local amount
 		if prod.amount ~= nil
 		then
@@ -537,8 +640,9 @@ local function calc_assembler(entity, inout_data, beacon_speed_effect)
 			-- handle if Product has probability not amount, like for centrifuges sometimes
 			amount = prod.probability * (prod.amount_min + prod.amount_max) / 2
 		end
-		-- game.print("calc_assembler " .. prod.name .. " amount " .. amount .. " modeffects " .. ( 1 + modeffects.prod) .. " cspeed " .. crafting_speed .. " crafting_time" .. crafting_time)
-		amount = amount * ( 1 + modeffects.prod) *  crafting_speed / crafting_time
+		-- gotta handle super beacons - they can affect prod too
+		debug_print("calc_assembler " .. prod.name .. " amount " .. amount .. " modeffects " .. ( 1 + modeffects.prod) .. " cspeed " .. crafting_speed .. " crafting_time" .. crafting_time)
+		amount = amount * ( 1 + modeffects.prod + beacon_modeffects.prod) *  crafting_speed / crafting_time
 		if inout_data.outputs[prod.name] ~= nil
 		then
 			inout_data.outputs[prod.name] = inout_data.outputs[prod.name] + amount
@@ -572,24 +676,25 @@ script.on_event(defines.events.on_player_selected_area,
 		local no_recipe_assemblers = 0
 		for _, entity in ipairs(event.entities)
 		do
-			-- game.print("Found entity " .. entity.name  )
+			debug_print("Found entity " .. entity.name  )
 			if entity.energy ~= nil
 			then
-				-- game.print("Has energy " .. entity.energy )
+				debug_print("Has energy " .. entity.energy )
 			else
-				-- game.print("No energy")
+				debug_print("No energy")
 			end
 			
 			if entity.type == "assembling-machine" or entity.type == "furnace"
 			then		
 				if entity.recipe ~= nil
 				then
-					local beacon_speed_effect = 0
+					local beacon_modeffects = { speed = 0, prod = 0 }
 					if entity.prototype.module_inventory_size > 0					
 					then
-						beacon_speed_effect = check_beacons(surface, entity, beacon_speed_effect)
+						beacon_modeffects = check_beacons(surface, entity)
 					end
-					calc_assembler(entity, inout_data, beacon_speed_effect)	
+					debug_print("bse = " .. beacon_modeffects.speed)
+					calc_assembler(entity, inout_data, beacon_modeffects)	
 				else
 					if entity.type == "assembling-machine"
 					then
@@ -635,7 +740,7 @@ script.on_event(defines.events.on_player_selected_area,
 local function on_hotkey_main(event)
 
 	global.marc_selected_units = global.marc_selected_units or {}
-	global.marc_selected_units[event.player_index] = global.marc_selected_units[event.player_index] or 2
+	global.marc_selected_units[event.player_index] = global.marc_selected_units[event.player_index] or marc_selected_units_default
 	local player = game.players[event.player_index]
 
 	-- once in their life, a message is displayed giving a hint	
@@ -660,7 +765,7 @@ end
 -- hide the gui
 local function on_gui_click(event)
 	local event_name = event.element.name
-	-- game.print("event_name " .. event_name)
+	debug_print("event_name " .. event_name)
 	local s = string.sub( event_name, 1, 5 )
 	local player = game.players[event.player_index]
 	
@@ -682,20 +787,35 @@ local function on_gui_selection(event)
 	if event_name == "maxrate_units"
 	then
 		local selected = player.gui.left.marc_gui_top.marc_gui_upper.maxrate_units.selected_index
-		-- game.print("selected is " .. selected)
+		debug_print("selected is " .. selected)
 		global.marc_selected_units[event.player_index] = selected
-		-- local selname = player.gui.left.marc_gui_top.maxrate_units.items[selected]
-		-- game.print("selname is " .. selname)
 		unit_entry = g_marc_units[selected]
-		-- game.print("selected " .. unit_entry.name .. " " .. unit_entry.multiplier .. "/" .. unit_entry.divisor)
+		debug_print("selected " .. unit_entry.name .. " " .. unit_entry.multiplier .. "/" .. unit_entry.divisor)
 		player.gui.left.marc_gui_top.destroy()
 		open_gui(event, global.marc_inout_data)
 	end
 end
 
 
+local function on_marc_command(event)
+
+if event.parameter == "debug"
+	then
+		global.marc_debug = true
+		debug_print("marc debugging is on")
+	elseif event.parameter == "nodebug"
+	then
+		debug_print("marc debugging is off")
+		global.marc_debug = false
+	else
+		game.players[event.player_index].print("unknown marc parameter: " .. event.parameter)
+	end
+end
+
 script.on_event(defines.events.on_gui_selection_state_changed, on_gui_selection)
 
 script.on_event("marc_hotkey", on_hotkey_main)
 
 script.on_event(defines.events.on_gui_click, on_gui_click)
+
+commands.add_command("marc", "Max Rate Calculator [ debug | nodebug ] ", on_marc_command)
