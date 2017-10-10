@@ -267,6 +267,15 @@ local function write_marc_gui(player, inout_data)
 	-- what units are we displaying in?
 	local selected = player.gui.left.marc_gui_top.marc_gui_upper.maxrate_units.selected_index
 	local unit_entry = g_marc_units[selected]
+	if unit_entry == nil
+	then
+		game.print("unit_entry was nil.   selected is " .. selected)
+		unit_entry = g_marc_units[g_marc_units_default]
+		if unit_entry == nil
+		then
+			game.print("still nil, wtf?")
+		end
+	end
 	local divisor = unit_entry.divisor
 	local multiplier = unit_entry.multiplier
 	local unit_type = unit_entry.infotype
@@ -740,7 +749,11 @@ script.on_event(defines.events.on_player_selected_area,
 local function on_hotkey_main(event)
 
 	global.marc_selected_units = global.marc_selected_units or {}
-	global.marc_selected_units[event.player_index] = global.marc_selected_units[event.player_index] or marc_selected_units_default
+	global.marc_selected_units[event.player_index] = global.marc_selected_units[event.player_index] or g_marc_units_default
+	if global.marc_selected_units[event.player_index] == 0
+	then
+		global.marc_selected_units[event.player_index] = g_marc_units_default
+	end
 	local player = game.players[event.player_index]
 
 	-- once in their life, a message is displayed giving a hint	

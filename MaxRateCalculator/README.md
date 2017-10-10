@@ -45,3 +45,6 @@ side of the Factorio window, in items per second, and items per minute.
 ### 1.2.10
 * Fixed to work with modded versions of beacons, such as Creative Mode's Super Beacon.
 * Speed cost won't go lower than 20%
+
+### 1.2.11
+* Fixed bug with new games getting fatal error when hotkey pressed for first time
