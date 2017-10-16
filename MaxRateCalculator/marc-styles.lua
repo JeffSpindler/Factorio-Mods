@@ -13,6 +13,19 @@ default_gui.sprite_obj_marc_style =
 	scalable = false
 }
 
+default_gui.marcalc_button_style = 
+{
+	type="button_style",
+	parent="button_style",
+	top_padding = 0,
+	right_padding = 0,
+	bottom_padding = 0,
+	left_padding = 0,
+	height = 40,
+	width = 40,
+	scalable = false
+}
+
 default_gui.table_marc_style =
 {
 	type = "table_style",
@@ -45,5 +58,12 @@ data:extend(
 	filename = "__core__/graphics/cancel.png",
 	width = 64,
 	height = 64
-}
+	},
+	{
+		type = "sprite",
+		name = "sprite_marc_calculator",
+		filename = "__MaxRateCalculator__/graphics/calculator.png",
+		width = 64,
+		height = 64
+	}
 })

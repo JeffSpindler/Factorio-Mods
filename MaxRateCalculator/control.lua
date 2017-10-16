@@ -5,6 +5,7 @@
 -- Does not compute actual running rates - see the Efficen-See mod for that
 -- (from which I learned and borrowed)
 
+require("calculator")
 
 
 g_marc_units = {}
@@ -32,7 +33,7 @@ local permin_format = "%16.1f"
 -- ----------------------------------------------------------------
 
 
-local function boolstr(bool)
+function boolstr(bool)
 	if bool
 	then return "T"
 	else return "F"
@@ -63,6 +64,8 @@ local function compatible_units(item_or_fluid, unit_type)
 
 end
 
+-- ----------------------------------------------------------------
+
 -- Return a flag indicating if name refers to an item (such as iron-plate) or a fluid
 local function get_item_or_fluid(name)
 	local proto = game.item_prototypes[name]
@@ -74,6 +77,7 @@ local function get_item_or_fluid(name)
 	return item_or_fluid
 end
 
+-- ----------------------------------------------------------------
 
 -- return the prototype
 local function get_proto(name)
@@ -87,8 +91,15 @@ local function get_proto(name)
 
 end
 
+local function add_value_to_marcalc_clickable_list(inout_data, label_name, count)
+	inout_data.clickable_values[label_name] = count
+end
+
+
+-- ----------------------------------------------------------------
+
 -- fill out the first part of a row with the icon and the rate.  Used for both inputs and outputs
-local function build_gui_row(guirow, name, count, rownum, machine_count, unit_type)
+local function build_gui_row(guirow, name, count, rownum, machine_count, unit_type, inout_data)
 	if machine_count == nil
 	then
 		machine_count = 0
@@ -111,10 +122,13 @@ local function build_gui_row(guirow, name, count, rownum, machine_count, unit_ty
 	localized_name = proto.localised_name
 	
 	guirow.add({type = "sprite-button", sprite =  item_or_fluid .. "/" .. name, name = "marc_sprite" .. rownum, style = "sprite_obj_marc_style", tooltip = {"marc-gui-tt-item-sprite",localized_name, machine_count}})
-	guirow.add({type = "label", name = "marc_per_min" .. rownum, caption = string.format(persec_format, count ), tooltip={"marc-gui-tt-rate"} })
-
+	local label_name = "marc_per_min" .. rownum
+	guirow.add({type = "label", name = label_name, caption = string.format(persec_format, count ), tooltip={"marc-gui-tt-rate"} })
+	add_value_to_marcalc_clickable_list(inout_data, label_name, count)
 	return true
 end
+
+-- ----------------------------------------------------------------
 
 -- create the list of rate units the user can choose from
 local function build_units_dropdown_list()
@@ -133,6 +147,7 @@ local function build_units_dropdown_list()
 	return item_list
 end
 
+-- ----------------------------------------------------------------
 
 -- scale the count based on the unit.
 -- some rate units require more than just the multiplier/divisor in the g_marc_units table
@@ -144,7 +159,7 @@ local function scale_rate(player, name, count)
 	local multiplier = unit_entry.multiplier
 	local unit_type = unit_entry.infotype
 	
-	debug_print("scale_rate " .. name .. " mult " .. multiplier .. " div " .. divisor .. " count " .. count)
+	-- debug_print("scale_rate " .. name .. " mult " .. multiplier .. " div " .. divisor .. " count " .. count)
 
 
 	local proto = get_proto(name)
@@ -189,9 +204,11 @@ local function scale_rate(player, name, count)
 			debug_print("divisor " .. divisor .. " total_capacity " .. total_capacity .. " multiplier " .. multiplier )
 			debug = true
 	end
-	debug_print("scale_rate now " .. name .. " mult " .. multiplier .. " div " .. divisor .. " count " .. count)
+	-- debug_print("scale_rate now " .. name .. " mult " .. multiplier .. " div " .. divisor .. " count " .. count)
 	return multiplier*count/divisor
 end
+
+-- ----------------------------------------------------------------
 
 -- Puts the calculated info into a frame on the left side of the window
 --
@@ -201,6 +218,7 @@ local function write_marc_gui(player, inout_data)
 	local outputs = inout_data.outputs
 	local machines = inout_data.machines
 	local machines_fed = inout_data.machines_fed or {}
+	inout_data.clickable_values = {}
 	
 	-- count input, output items and number in common between them
 	local input_items = 0
@@ -244,6 +262,8 @@ local function write_marc_gui(player, inout_data)
 	else
 		marc_gui_top1.add({type = "label", name = "marc_top1_spacer" , caption = "                                                      "})
 	end
+
+	marc_gui_top1.add({type = "sprite-button", sprite = "sprite_marc_calculator", name = "marc_calculator_button" ,align = "right", style = "sprite_obj_marc_style"})
 
 	marc_gui_top1.add({type = "sprite-button", sprite = "sprite_marc_close", name = "marc_close_button" ,align = "right", style = "sprite_obj_marc_style"})
 
@@ -312,7 +332,7 @@ local function write_marc_gui(player, inout_data)
 		do
 			count = inputs[name]
 			local scaled_count = scale_rate(player, name, count)
-			build_gui_row(gui_inrows, name, scaled_count, rownum, machines_fed[name], unit_type) 
+			build_gui_row(gui_inrows, name, scaled_count, rownum, machines_fed[name], unit_type, inout_data) 
 			rownum = rownum+1		
 		end
 	end
@@ -369,12 +389,14 @@ local function write_marc_gui(player, inout_data)
 		do
 			count = outputs[name]
 			local scaled_count = scale_rate(player, name, count)
-			local legit = build_gui_row(gui_outrows, name, scaled_count, rownum, machines[name], unit_type)
+			local legit = build_gui_row(gui_outrows, name, scaled_count, rownum, machines[name], unit_type, inout_data)
 			if legit	-- only add to row if unit_type is compatible with the item
 			then
 				local average_per_machine = count/machines[name]
 				local scaled_average_per_machine = scale_rate(player, name, average_per_machine) -- multiplier*average_per_machine/divisor
-				gui_outrows.add({type = "label", name = "marc_machine_rate" .. rownum, caption = string.format( persec_format,scaled_average_per_machine), tooltip={"marc-gui-tt-items-per-machine"} })			
+				local label_name = "marc_machine_rate" .. rownum
+				gui_outrows.add({type = "label", name = label_name, caption = string.format( persec_format,scaled_average_per_machine), tooltip={"marc-gui-tt-items-per-machine"} })						
+				add_value_to_marcalc_clickable_list(inout_data, label_name, scaled_average_per_machine)
 
 				-- add extra columns if an item appears in both inputs and outputs
 
@@ -383,10 +405,14 @@ local function write_marc_gui(player, inout_data)
 				then
 					local net_difference = (count - input_count)
 					local net_count = scale_rate(player, name,net_difference)
-					gui_outrows.add({type = "label", name = "marc_net_per_min" .. rownum, caption = string.format( persec_format, net_count ), tooltip={"marc-gui-tt-net-rate"}})
+					label_name = "marc_net_per_min" .. rownum
+					gui_outrows.add({type = "label", name = label_name, caption = string.format( persec_format, net_count ), tooltip={"marc-gui-tt-net-rate"}})
+					add_value_to_marcalc_clickable_list(inout_data, label_name, net_count)
 
 					local net_machines = net_difference/average_per_machine
-					gui_outrows.add({type = "label", name = "marc_net_machines" .. rownum, caption = string.format( persec_format, net_machines  ), tooltip={"marc-gui-tt-net-machines"}})
+					label_name = "marc_net_machines" .. rownum
+					gui_outrows.add({type = "label", name = label_name, caption = string.format( persec_format, net_machines  ), tooltip={"marc-gui-tt-net-machines"}})
+					add_value_to_marcalc_clickable_list(inout_data, label_name, net_machines)
 				elseif both_input_and_output_items > 0
 				then 
 					-- five column display, but this item doesn't have net info
@@ -400,6 +426,8 @@ local function write_marc_gui(player, inout_data)
 
 end
 
+-- ----------------------------------------------------------------
+
 -- show the gui with the rate calculations
 local function open_gui(event, inout_data)
 
@@ -409,10 +437,12 @@ local function open_gui(event, inout_data)
 		player.gui.left.marc_gui_top.destroy()
 	end
 	
-	script.on_event(defines.events.on_tick, on_tick)
+	-- script.on_event(defines.events.on_tick, on_tick)
     
 	write_marc_gui(player, inout_data)
 end
+
+-- ----------------------------------------------------------------
 
 -- calculate the speed and productivity effects of a single module
 local function calc_mod( modname, modeffects, modquant, effectivity )
@@ -438,6 +468,8 @@ local function calc_mod( modname, modeffects, modquant, effectivity )
 	end
 end
 
+-- ----------------------------------------------------------------
+
 -- calculate the effects of all the modules in the entity
 local function calc_mods(entity, modeffects, effectivity)
 	modinv = entity.get_module_inventory()
@@ -457,15 +489,21 @@ local function calc_mods(entity, modeffects, effectivity)
 	return modeffects
 end
 
+-- ----------------------------------------------------------------
+
 local function point_in_bounding_box(b, x, y)
 	
 	return x > b.left_top.x and x < b.right_bottom.x and
 	   y > b.left_top.y and y < b.right_bottom.y
 end
 
+-- ----------------------------------------------------------------
+
 local function print_bounding_box(name, b)
 	debug_print(name .. " " .. b.left_top.x .. "," .. b.left_top.y .. " " .. b.right_bottom.x .. "," .. b.right_bottom.y)
 end
+
+-- ----------------------------------------------------------------
 
 local function does_box_contain_box(b1, b2)
 	-- this will detect if b2 is inside b1
@@ -488,6 +526,8 @@ local function does_box_contain_box(b1, b2)
 	debug_print("-------------")
 	return answer
 end
+
+-- ----------------------------------------------------------------
 
 local function is_machine_in_range_of_beacon(entity, beacon)
 	debug_print("is machine in range")
@@ -515,6 +555,8 @@ local function is_machine_in_range_of_beacon(entity, beacon)
 	return ans
 end
 
+
+-- ----------------------------------------------------------------
 
 max_beacon_dist = -1
 
@@ -574,6 +616,8 @@ local function check_beacons(surface, entity)
 	return modeffects
 
 end
+
+-- ----------------------------------------------------------------
 
 -- for an individual assembler, calculate the rates all the inputs are used at and the outputs are produced at, per second
 local function calc_assembler(entity, inout_data, beacon_modeffects)
@@ -664,6 +708,8 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 	
 end
 
+-- ----------------------------------------------------------------
+
 -- player has selected some machines with our tool
 script.on_event(defines.events.on_player_selected_area,
 	function(event)
@@ -733,6 +779,8 @@ script.on_event(defines.events.on_player_selected_area,
 		end
 		
 		-- save so if user changes units dropdown, we can recalculate the gui
+		global.marc_inout_data_by_player = global.marc_inout_data_by_player or {}
+		global.marc_inout_data_by_player[event.player_index] = inout_data
 		global.marc_inout_data = inout_data
 		
 		-- now open and show the gui with the calculations
@@ -744,6 +792,8 @@ script.on_event(defines.events.on_player_selected_area,
 
 	end
 )
+
+-- ----------------------------------------------------------------
 
 -- player hit the magic key, create our selection tool and put it in their hand
 local function on_hotkey_main(event)
@@ -774,22 +824,59 @@ local function on_hotkey_main(event)
 
 end
 
+-- ----------------------------------------------------------------
+
 -- user has clicked somewhere.  If clicked on any gui item name that starts with "marc_..."
 -- hide the gui
 local function on_gui_click(event)
 	local event_name = event.element.name
 	debug_print("event_name " .. event_name)
-	local s = string.sub( event_name, 1, 5 )
+	local marc_prefix = "marc_"
+	local possible_marc_prefix = string.sub( event_name, 1, string.len(marc_prefix) )
 	local player = game.players[event.player_index]
 	
-	if s == "marc_"
+	local marcalc_prefix = "marcalc_"
+	local possible_marcalc_prefix = string.sub( event_name, 1, string.len(marcalc_prefix))
+	if possible_marcalc_prefix == marcalc_prefix
 	then
+		handle_marcalc_click(event_name, player)
+		return
+	end
+	
+	if global.marc_inout_data_by_player ~= nil
+	then
+		local inout_data = global.marc_inout_data_by_player[event.player_index]
+		if inout_data ~= nil
+		then
+			debug_print("on_gui_click looking for " .. event_name .. " in clickable values")
+			val = inout_data.clickable_values[event_name]
+			if val ~= nil
+			then
+				debug_print("on_gui_click found " .. event_name .. " in clickable values. val = " .. val)
+				marcalc_clickable_value_clicked(player, val)
+				return
+			end
+		end
+	end
+	
+	
+	if possible_marc_prefix == marc_prefix
+	then
+		if event_name == "marc_calculator_button"
+		then
+			toggle_calculator(player)
+			return
+		end
+	
 		if player.gui.left.marc_gui_top then
 			player.gui.left.marc_gui_top.destroy()
+			hide_calculator(player)
 		end
 
 	end
 end
+
+-- ----------------------------------------------------------------
 
 local function on_gui_selection(event)
 
@@ -805,10 +892,17 @@ local function on_gui_selection(event)
 		unit_entry = g_marc_units[selected]
 		debug_print("selected " .. unit_entry.name .. " " .. unit_entry.multiplier .. "/" .. unit_entry.divisor)
 		player.gui.left.marc_gui_top.destroy()
-		open_gui(event, global.marc_inout_data)
+		if global.marc_inout_data_by_player == nil -- by_player is new, may not exist in old save
+		then
+			open_gui(event, global.marc_inout_data)
+		else
+			open_gui(event, global.marc_inout_data_by_player[event.player_index])
+		end
 	end
 end
 
+
+-- ----------------------------------------------------------------
 
 local function on_marc_command(event)
 
@@ -825,10 +919,15 @@ if event.parameter == "debug"
 	end
 end
 
-script.on_event(defines.events.on_gui_selection_state_changed, on_gui_selection)
+-- ----------------------------------------------------------------
 
-script.on_event("marc_hotkey", on_hotkey_main)
+script.on_event( defines.events.on_gui_selection_state_changed, on_gui_selection )
 
-script.on_event(defines.events.on_gui_click, on_gui_click)
+script.on_event( "marc_hotkey", on_hotkey_main )
 
-commands.add_command("marc", "Max Rate Calculator [ debug | nodebug ] ", on_marc_command)
+script.on_event( defines.events.on_gui_click, on_gui_click)
+
+script.on_event( defines.events.on_gui_text_changed, marcalc_on_gui_text_changed )
+ 
+commands.add_command( "marc", "Max Rate Calculator [ debug | nodebug ] ", on_marc_command )
+

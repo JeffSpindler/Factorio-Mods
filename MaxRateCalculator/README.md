@@ -48,3 +48,7 @@ side of the Factorio window, in items per second, and items per minute.
 
 ### 1.2.11
 * Fixed bug with new games getting fatal error when hotkey pressed for first time
+
+### 2.0.12
+* Added in-game four function calculator, accessed via hotkey or toggle button on Max Rate Calculator window
+* Values in MRC window, when clicked on, appear in the calculator
