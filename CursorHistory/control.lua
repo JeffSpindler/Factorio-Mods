@@ -546,7 +546,7 @@ local function build_bar( player, reset )
 			{
 			type = "sprite-button", 
 			name = "curhist_toggle_button", 
-			tooltip = "toggle history - localize this", 
+			tooltip = {"curhist_toggle_button_tooltip"}, 
 			style = "curhist_sprite_act_style",
 			sprite = "curhist_toggle_sprite"
 			})
