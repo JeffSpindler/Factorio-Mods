@@ -52,3 +52,11 @@ side of the Factorio window, in items per second, and items per minute.
 ### 2.0.12
 * Added in-game four function calculator, accessed via hotkey or toggle button on Max Rate Calculator window
 * Values in MRC window, when clicked on, appear in the calculator
+
+
+### 2.0.13
+* Added missing locale string for calc hotkey
+
+
+### 2.0.14
+* Fixed bug with text entry in other mods crashing

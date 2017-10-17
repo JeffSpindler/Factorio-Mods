@@ -366,10 +366,13 @@ end
 -- ----------------------------------------------------------------
 
 function marcalc_on_gui_text_changed(event)
-	-- debug_print("marcalc_on_gui_text_changed )
 	local player_index = event.player_index
-	local element = event.element
 	local player = game.players[event.player_index]
+	local element = event.element
+	if element.name ~= "marcalc_display" or player.gui.left.marcalc == nil
+	then
+		return
+	end
 	local text = player.gui.left.marcalc.marcalc_display.text
 
 	
