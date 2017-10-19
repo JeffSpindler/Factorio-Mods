@@ -149,6 +149,20 @@ end
 
 -- ----------------------------------------------------------------
 
+local function init_selected_units(player_index)
+
+	global.marc_selected_units = global.marc_selected_units or {}
+	global.marc_selected_units[player_index] = global.marc_selected_units[player_index] or g_marc_units_default
+	if global.marc_selected_units[player_index] == 0
+	then
+		global.marc_selected_units[player_index] = g_marc_units_default
+	end
+end
+
+
+
+-- ----------------------------------------------------------------
+
 -- scale the count based on the unit.
 -- some rate units require more than just the multiplier/divisor in the g_marc_units table
 local function scale_rate(player, name, count)
@@ -273,6 +287,7 @@ local function write_marc_gui(player, inout_data)
 	local marc_gui_upper = marc_gui_top.add({type = "flow", name = "marc_gui_upper", direction = "horizontal"})
 	marc_gui_upper.add({type = "label", name="marc_upper_rate_label", caption={"marc-gui-rate-colon"}, tooltip={"marc-gui-tt-rate-select"}})
 	
+	init_selected_units(player.index)
 	local ix = global.marc_selected_units[player.index]
 	marc_gui_upper.add({type="drop-down", name="maxrate_units", items=build_units_dropdown_list(), selected_index=ix, tooltip={"marc-gui-tt-rate-select"}})
 	
@@ -684,10 +699,10 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 	-- table
 	for _, prod in ipairs(entity.recipe.products)
 	do
-		debug_print("prod amount, modeffects.prod " .. prod.name .. " " .. prod.amount .. "," .. modeffects.prod )
 		local amount
 		if prod.amount ~= nil
 		then
+			debug_print("prod amount, modeffects.prod " .. prod.name .. " " .. prod.amount .. "," .. modeffects.prod )
 			amount = prod.amount 
 		else
 			-- handle if Product has probability not amount, like for centrifuges sometimes
@@ -798,12 +813,7 @@ script.on_event(defines.events.on_player_selected_area,
 -- player hit the magic key, create our selection tool and put it in their hand
 local function on_hotkey_main(event)
 
-	global.marc_selected_units = global.marc_selected_units or {}
-	global.marc_selected_units[event.player_index] = global.marc_selected_units[event.player_index] or g_marc_units_default
-	if global.marc_selected_units[event.player_index] == 0
-	then
-		global.marc_selected_units[event.player_index] = g_marc_units_default
-	end
+	init_selected_units(event.player_index)
 	local player = game.players[event.player_index]
 
 	-- once in their life, a message is displayed giving a hint	
@@ -887,7 +897,6 @@ local function on_gui_selection(event)
 	if event_name == "maxrate_units"
 	then
 		local selected = player.gui.left.marc_gui_top.marc_gui_upper.maxrate_units.selected_index
-		debug_print("selected is " .. selected)
 		global.marc_selected_units[event.player_index] = selected
 		unit_entry = g_marc_units[selected]
 		debug_print("selected " .. unit_entry.name .. " " .. unit_entry.multiplier .. "/" .. unit_entry.divisor)

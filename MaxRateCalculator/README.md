@@ -60,3 +60,7 @@ side of the Factorio window, in items per second, and items per minute.
 
 ### 2.0.14
 * Fixed bug with text entry in other mods crashing
+
+### 2.0.15
+* Fixed bug recipes (like uranium processing) that have % chance causing crash
+* Added fix for possible uninitalized variable (marc_selected_units) crash reported in mod portal.  Could not reproduce this, but added defensive code.
