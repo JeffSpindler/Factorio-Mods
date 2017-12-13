@@ -325,7 +325,7 @@ local function write_marc_gui(player, inout_data)
 		gui_input_scrollpane = gui_input_frame.add({type = "scroll-pane", name = "marc_inputs_pane", vertical_scroll_policy = "auto", style = "scroll_pane_marc_style",  direction = "vertical", caption = {"marc-gui-inputs"}})
 		
 		-- three columns - item icon, rate per second, rate per minute
-		gui_inrows= gui_input_scrollpane.add({type = "table", name = "marc_inrows", style = table_marc_style, colspan = 2 })
+		gui_inrows= gui_input_scrollpane.add({type = "table", name = "marc_inrows", style = table_marc_style, column_count = 2 })
 		gui_inrows.style.column_alignments[2] = "right"	-- numbers look best right justified
 		
 		-- column headers
@@ -366,7 +366,7 @@ local function write_marc_gui(player, inout_data)
 		else
 			cols = 3
 		end
-		gui_outrows = gui_output_scrollpane.add({type = "table", name = "marc_outrows", style = table_marc_style, colspan = cols })
+		gui_outrows = gui_output_scrollpane.add({type = "table", name = "marc_outrows", style = table_marc_style, column_count = cols })
 		
 		-- right justify the numbers
 		for i=1,cols
@@ -654,20 +654,20 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 
 	crafting_speed = crafting_speed * ( 1 + total_speed_effect)
 	-- how long does the item take to craft if no modules and crafting speed was 1?  It's in the recipe.energy!
-	crafting_time = entity.recipe.energy
+	crafting_time = entity.get_recipe().energy
 	
 	debug_print("crafting time " .. crafting_time .. " modeffects.speed " .. modeffects.speed .. " beacon_modeffects.speed " .. beacon_modeffects.speed )
 	
 	if(crafting_time == 0)
 	then
 		crafting_time = 1
-		debug_print("entity.recipe.energy = 0, wtf?")
+		debug_print("entity.get_recipe().energy = 0, wtf?")
 	end
 	
 
 	-- for all the ingredients in the recipe, calculate the rate
 	-- they're consumed at.  Add to the inputs table.
-	for _, ingred in ipairs(entity.recipe.ingredients)
+	for _, ingred in ipairs(entity.get_recipe().ingredients)
 	do
 		local amount = ingred.amount * crafting_speed / crafting_time
 		if inout_data.inputs[ingred.name] ~= nil
@@ -697,7 +697,7 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 	-- for all the products in the recipe (usually just one)
 	-- calculate the rate they're produced at and add each product to the outputs
 	-- table
-	for _, prod in ipairs(entity.recipe.products)
+	for _, prod in ipairs(entity.get_recipe().products)
 	do
 		local amount
 		if prod.amount ~= nil
@@ -756,7 +756,7 @@ script.on_event(defines.events.on_player_selected_area,
 			
 			if entity.type == "assembling-machine" or entity.type == "furnace"
 			then		
-				if entity.recipe ~= nil
+				if entity.get_recipe() ~= nil
 				then
 					local beacon_modeffects = { speed = 0, prod = 0 }
 					if entity.prototype.module_inventory_size > 0					

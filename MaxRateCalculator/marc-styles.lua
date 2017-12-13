@@ -3,7 +3,7 @@ local default_gui = data.raw["gui-style"].default
 default_gui.sprite_obj_marc_style = 
 {
 	type="button_style",
-	parent="button_style",
+	-- parent="button_style",
 	top_padding = 0,
 	right_padding = 0,
 	bottom_padding = 0,
@@ -16,7 +16,7 @@ default_gui.sprite_obj_marc_style =
 default_gui.marcalc_button_style = 
 {
 	type="button_style",
-	parent="button_style",
+	-- parent="button_style",
 	top_padding = 0,
 	right_padding = 0,
 	bottom_padding = 0,
@@ -38,11 +38,12 @@ default_gui.table_marc_style =
 default_gui.scroll_pane_marc_style =
 {
 	type = "scroll_pane_style",
-	parent="scroll_pane_style",
-	flow_style =
-	{
-		parent = "flow_style"
-	},
+	-- parent="scroll_pane_style",
+	-- flow_style =
+	-- {
+	-- 	type = "flow_style",
+	-- 	parent = "flow_style"
+	-- },
 	resize_row_to_width = true,
 	resize_to_row_height = false,
 	minimal_height=128,

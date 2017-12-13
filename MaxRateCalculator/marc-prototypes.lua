@@ -20,6 +20,7 @@ data:extend(
 		subgroup = "tool",
 		order = "c[automated-construction]-b[tree-deconstructor]",
 		stack_size = 1,
+		icon_size = 32,
 		selection_color = { r = 0.6, g = 0.6, b = 0 },
 		alt_selection_color = { r = 0, g = 0, b = 1 },
 		selection_mode = {"blueprint", "buildable-type"},
