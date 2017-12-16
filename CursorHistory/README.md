@@ -18,3 +18,8 @@ In future releases, I've been thinking about adding a mod settings capability to
 ### 0.0.1
 * Initial release - basic version
 
+### 0.0.2
+* Update for corrupted icon
+
+### 0.1.3
+* Changes for 0.16

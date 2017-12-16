@@ -2,7 +2,7 @@ local default_gui = data.raw["gui-style"].default
 default_gui.curhist_sprite_act_style = 
 {
 	type="button_style",
-	parent="button_style",
+	-- parent="button_style",
 	top_padding = 0,
 	right_padding = 0,
 	bottom_padding = 0,
@@ -16,7 +16,7 @@ default_gui.curhist_sprite_act_style =
 default_gui.curhist_sprite_highlight_style = 
 {
 	type="button_style",
-	parent="button_style",
+	-- parent="button_style",
 	top_padding = 0,
 	right_padding = 0,
 	bottom_padding = 0,
