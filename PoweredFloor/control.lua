@@ -20,11 +20,18 @@ end
 function PlayerBuiltTile(event)
     -- game.print("PlayerBuiltTile")
     local player = game.players[event.player_index]
-    if player ~= nil
+    if player ~= nil and event.tiles ~= nil and player.surface ~= nil
     then
-    	IncludePoweredWidget(event.positions, player.surface )
-    else
-    	-- game.print("PlayerBuiltTile nil player?")
+    	IncludePoweredWidget(event.tiles, player.surface )
+    elseif player == nil
+    then
+    	game.print("PlayerBuiltTile nil player?")
+    elseif event.tiles == nil
+    then
+    	game.print("PlayerBuiltTile nil positions?")
+    elseif player.surface == nil
+    then
+    	game.print("PlayerBuiltTile nil surface?")
     end
     
 end
@@ -34,7 +41,7 @@ end
 -- Add the widget
 function RobotBuiltTile(event)
     -- game.print("RobotBuiltTile")
-    IncludePoweredWidget(event.positions, event.robot.surface)
+    IncludePoweredWidget(event.tiles, event.robot.surface)
 
 end
 
@@ -101,12 +108,14 @@ end
 
 -- when adding tiles, include a hidden widget which has power wires
 -- if it's a circuit tile, add the circuit wires too
-function IncludePoweredWidget(position, surface)
+function IncludePoweredWidget(tiles, surface)
 	-- game.print("IncludePoweredWidget")
 
 
-	for i, position in ipairs(position)
+	for i, oldtile in ipairs(tiles)
 	do
+		local position = oldtile.position
+		-- game.print("IncludePoweredWidget x " .. position.x .. " y " .. position.y )
 		local currentTile = surface.get_tile(position.x,position.y)
 
 		local currentTilename = surface.get_tile(position.x,position.y).name
@@ -126,7 +135,7 @@ function IncludePoweredWidget(position, surface)
 			else
 				widget_name = "powered-floor-widget"
 			end
-			-- game.print("IncludePowered add " .. widget_name)
+			game.print("IncludePowered add " .. widget_name)
 			pf_entity = surface.create_entity{name = widget_name, position = {X,Y}, force = game.forces.neutral}
 			pf_entity.destructible = false
 

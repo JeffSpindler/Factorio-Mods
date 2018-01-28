@@ -19,3 +19,6 @@ Adds tiles which provide power to whatever's sitting on top of them. Also adds a
 ### 0.1.2
 * Support for Factorio 0.16
 
+### 0.1.3
+* Fixes crashing issues with 16.18
+
