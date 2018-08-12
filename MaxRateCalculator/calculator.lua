@@ -45,8 +45,16 @@ end
 local function update_display(player,msg)
 	if msg == nil or msg == ""
 	then
+	    -- bug repored by EugeneBeetle indicated we somehow got in here with current_value = nil
+		if global.marcalc_context[player.index].current_value == nil
+		then
+		    debug_print("update_display.  cv is nil???")
+			return
+	    end
 		debug_print("update_display cv is " .. global.marcalc_context[player.index].current_value)
-		if global.marcalc_context[player.index].in_left_of_decimal and global.marcalc_context[player.index].decimal_place == 10
+
+		if global.marcalc_context[player.index].in_left_of_decimal 
+		   and global.marcalc_context[player.index].decimal_place == 10
 		then
 			debug_print("update_display() add the dot")
 			player.gui.left.marcalc.marcalc_display.caption = tostring(global.marcalc_context[player.index].current_value) .. "."
@@ -237,6 +245,11 @@ end
 
 local function process_mem_key(player, key)
 	debug_print("process_mem_key(" .. key .. ")")
+	if calculator_memory == nil
+	then
+	    debug_print("process_mem_key(" .. key .. ") calculator_memory was nil")
+	    calculator_memory = 0
+	end
 	if key == "MS"
 	then
 		calculator_memory = global.marcalc_context[player.index].current_value
