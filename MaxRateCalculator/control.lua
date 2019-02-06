@@ -51,6 +51,23 @@ end
 
 -- ----------------------------------------------------------------
 
+function printObj(obj, hierarchyLevel) 
+ 
+ for k,v in pairs(obj)
+ do
+    if(type(v) == "userdata")
+    then
+       debug_print(k .. " is userdata")
+    else
+ 		debug_print(k .. "=" .. v.name)
+ 	end
+ end
+
+end
+
+
+-- ----------------------------------------------------------------
+
 local function compatible_units(item_or_fluid, unit_type)
 
 	if item_or_fluid == "fluid" and
@@ -725,6 +742,89 @@ end
 
 -- ----------------------------------------------------------------
 
+-- for an individual mining- drill, calculate the rates all the inputs are used at and the outputs are produced at, per second
+local function calc_mining(entity, inout_data, beacon_modeffects, drilling_bonus)
+
+	local x = entity.position.x
+	local y = entity.position.y
+	debug_print("Found a drill")
+	local prod = entity.mining_target
+	if prod == nil
+	then
+		return
+	end
+	
+	local prodproto = entity.mining_target.prototype
+	local drillproto = entity.prototype
+    
+    printObj(prod)
+
+    
+	debug_print("bse = " .. beacon_modeffects.speed)
+	
+	debug_print("target is " .. prod.name .. " type " .. prod.type)
+	debug_print("target amount " .. prod.amount .. " normal amount " .. prodproto.normal_resource_amount)
+	debug_print("progress " .. entity.mining_progress .. " bonus " .. entity.bonus_mining_progress)
+	debug_print("speed " .. drillproto.mining_speed .. " power " .. drillproto.mining_power)
+	-- get the machines base crafting speed, in cycles per second
+	local mining_speed = entity.prototype.mining_speed
+	local mining_power = entity.prototype.mining_power
+	--local is_infinite = prod.prototype.infinite
+	-- debug_print("is_infinite " .. is_infinite)
+	local mining_hardness = prodproto.mineable_properties.hardness
+	local mining_time = prodproto.mineable_properties.mining_time
+	local result_type = get_item_or_fluid(prodproto.name)
+	
+	debug_print("result type is " .. result_type)
+	
+	modeffects = { speed = 0, prod = 0 }
+	local effectivity = 1
+	modeffects = calc_mods(entity, modeffects, effectivity)
+
+	-- adjust crafting speed based on modules and beacons
+	local total_speed_effect = modeffects.speed + beacon_modeffects.speed
+	if total_speed_effect < -0.80 -- no worse than 20%
+	then
+		total_speed_effect = -0.80
+	end
+	debug_print( "calc_assembler cspeed " .. mining_speed .. " modspeed " .. modeffects.speed .. " beacon_modeffects.speed " .. beacon_modeffects.speed .. " total_speed_effect " .. total_speed_effect)
+
+	mining_speed = mining_speed * ( 1 + total_speed_effect)
+
+    local amount =  (mining_power - mining_hardness) * mining_speed / mining_time
+    debug_print("amount =  (mining_power - mining_hardness) * mining_speed / mining_time")
+    debug_print(amount .. " =  (" .. mining_power.." - "..mining_hardness..") * ".. mining_speed.." / ".. mining_time)
+  
+    amount = amount* ( 1 + drilling_bonus + modeffects.prod + beacon_modeffects.prod)
+    debug_print("amount = amount* ( 1 +  drilling_bonus _modeffects.prod + beacon_modeffects.prod)")
+    debug_print(amount.." = amount  * ( 1 +" ..drilling_bonus.. "+" ..  modeffects.prod.. " +" ..  beacon_modeffects.prod..")")
+	  
+    if result_type == "fluid"
+    then	
+    	local mining_yield = (prod.amount / prodproto.normal_resource_amount ) *100
+		debug_print("yield is " .. math.floor(mining_yield))
+		mining_yield = math.min(mining_yield, 100)
+    	debug_print("ideal_amount = amount*  mining_yield / 10")    	
+        amount = amount*  mining_yield      
+        debug_print(amount .." = amount*  "..mining_yield.." / 10")
+ 
+    end
+    
+	if inout_data.outputs[prod.name] ~= nil
+	then
+		debug_print("adding " .. amount .. " into " .. inout_data.outputs[prod.name])
+		inout_data.outputs[prod.name] = inout_data.outputs[prod.name] + amount
+		inout_data.machines[prod.name] = inout_data.machines[prod.name] + 1
+	else
+	    debug_print("setting " .. prod.name .. " amount to " ..amount)
+		inout_data.outputs[prod.name] = amount
+		inout_data.machines[prod.name] =  1
+	end
+
+end
+
+-- ----------------------------------------------------------------
+
 -- player has selected some machines with our tool
 script.on_event(defines.events.on_player_selected_area,
 	function(event)
@@ -773,6 +873,19 @@ script.on_event(defines.events.on_player_selected_area,
 						no_recipe_smelters = no_recipe_smelters + 1
 					end
 				end
+			end
+			
+			if entity.type == "mining-drill"
+			then
+				local beacon_modeffects = { speed = 0, prod = 0 }
+				if entity.prototype.module_inventory_size > 0					
+				then
+					beacon_modeffects = check_beacons(surface, entity)
+				end
+				local drilling_bonus = player.force.mining_drill_productivity_bonus
+				debug_print("drilling_bonus " .. drilling_bonus)
+				calc_mining(entity, inout_data, beacon_modeffects, drilling_bonus)
+
 			end
 		end
 		
@@ -827,9 +940,12 @@ local function on_hotkey_main(event)
 	-- put whatever is in the player's hand back in their inventory
 	-- and put our selection tool in their hand
 	player.clean_cursor()
-	local cursor_stack = player.cursor_stack
-	cursor_stack.clear()
-	cursor_stack.set_stack({name="max-rate-calculator", type="selection-tool", count = 1})
+	if player.cursor_stack ~= nil -- muppet9010 reported crash accessing nil cursor_stack here when player died
+	then
+		local cursor_stack = player.cursor_stack
+		cursor_stack.clear()
+		cursor_stack.set_stack({name="max-rate-calculator", type="selection-tool", count = 1})
+	end
 
 
 end

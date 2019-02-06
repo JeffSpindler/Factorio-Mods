@@ -64,3 +64,7 @@ side of the Factorio window, in items per second, and items per minute.
 ### 2.0.15
 * Fixed bug recipes (like uranium processing) that have % chance causing crash
 * Added fix for possible uninitalized variable (marc_selected_units) crash reported in mod portal.  Could not reproduce this, but added defensive code.
+
+### 2.0.18
+Fix for crash on player death when using selection tool
+Calculates rates for mining drills and pumpjacks (however, not sulfuric acid consumption for uranium mining)
