@@ -68,3 +68,5 @@ side of the Factorio window, in items per second, and items per minute.
 ### 2.0.18
 Fix for crash on player death when using selection tool
 Calculates rates for mining drills and pumpjacks (however, not sulfuric acid consumption for uranium mining)
+
+### 3.0.20 0.17 support.  Removed mining calculations.  Needs general rate re-testing

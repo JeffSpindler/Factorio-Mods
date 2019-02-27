@@ -11,11 +11,12 @@ require("calculator")
 g_marc_units = {}
 
 
+-- .16 values for belts m/d = 3/40, 3/80, 1/40
 g_marc_units[1] = {name="marc-gui-persec", 			localized_name = {"marc-gui-persec"}, 			multiplier = 1, divisor = 1, infotype="time"}
 g_marc_units[2] = {name="marc-gui-permin", 			localized_name = {"marc-gui-permin"}, 			multiplier = 60, divisor = 1, infotype="time"}
-g_marc_units[3] = {name="marc-transport-belt", 		localized_name = {"marc-transport-belt"}, 		multiplier = 3, divisor = 40, infotype="transport"}
-g_marc_units[4] = {name="marc-fast-transport-belt", localized_name = {"marc-fast-transport-belt"}, 	multiplier = 3, divisor = 80, infotype="transport"}
-g_marc_units[5] = {name="marc-express-transport-belt", localized_name = {"marc-express-transport-belt"}, multiplier = 1, divisor = 40, infotype="transport"}
+g_marc_units[3] = {name="marc-transport-belt", 		localized_name = {"marc-transport-belt"}, 		multiplier = 3, divisor = 45, infotype="transport"}
+g_marc_units[4] = {name="marc-fast-transport-belt", localized_name = {"marc-fast-transport-belt"}, 	multiplier = 3, divisor = 90, infotype="transport"}
+g_marc_units[5] = {name="marc-express-transport-belt", localized_name = {"marc-express-transport-belt"}, multiplier = 1, divisor = 45, infotype="transport"}
 g_marc_units[6] = {name="marc-burner-inserter", 	localized_name = {"marc-burner-inserter"}, 		multiplier = 3, divisor = 1.76, infotype="inserter"} -- divisor from https://wiki.factorio.com/Inserters
 g_marc_units[7] = {name="marc-basic-inserter", 		localized_name = {"marc-basic-inserter"}, 		multiplier = 3, divisor = 2.50, infotype="inserter"}
 g_marc_units[8] = {name="marc-long-inserter", 		localized_name = {"marc-long-inserter"}, 		multiplier = 3, divisor = 3.46, infotype="inserter"}
@@ -875,18 +876,18 @@ script.on_event(defines.events.on_player_selected_area,
 				end
 			end
 			
-			if entity.type == "mining-drill"
-			then
-				local beacon_modeffects = { speed = 0, prod = 0 }
-				if entity.prototype.module_inventory_size > 0					
-				then
-					beacon_modeffects = check_beacons(surface, entity)
-				end
-				local drilling_bonus = player.force.mining_drill_productivity_bonus
-				debug_print("drilling_bonus " .. drilling_bonus)
-				calc_mining(entity, inout_data, beacon_modeffects, drilling_bonus)
-
-			end
+			-- 0.17 gives error "LuaEntityPrototype doesn't contain key mining_power."
+			-- if entity.type == "mining-drill"
+			-- then
+			-- 	local beacon_modeffects = { speed = 0, prod = 0 }
+			-- 	if entity.prototype.module_inventory_size > 0					
+			-- 	then
+			-- 		beacon_modeffects = check_beacons(surface, entity)
+			--	end
+			--	local drilling_bonus = player.force.mining_drill_productivity_bonus
+			--	debug_print("drilling_bonus " .. drilling_bonus)
+			--	calc_mining(entity, inout_data, beacon_modeffects, drilling_bonus)
+			-- end
 		end
 		
 		if no_recipe_assemblers > 0 or no_recipe_smelters > 0
