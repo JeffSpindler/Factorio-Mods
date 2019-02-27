@@ -62,7 +62,6 @@ data:extend({
     name = "powered-floor-tap",
     icon = "__PoweredFloor__/graphic/powered-floor-tap.png",
     icon_size = 32,
-    flags = {"goes-to-quickbar"},
     subgroup = "energy-pipe-distribution",
     order = "a[energy]-p2[powered-floor-tap]",
     place_result = "powered-floor-tap",
@@ -74,7 +73,6 @@ data:extend({
     name = "powered-floor-tile",
     icon = "__PoweredFloor__/graphic/powered-floor-icon.png",
     icon_size = 32,
-    flags = {"goes-to-quickbar"},
     subgroup = "energy-pipe-distribution",
     order = "a[energy]-p1[powered-floor-tile]",
     stack_size = 50,
@@ -91,7 +89,6 @@ data:extend({
     name = "powered-floor-circuit-tile",
     icon = "__PoweredFloor__/graphic/powered-floor-circuit-icon.png",
     icon_size = 32,
-    flags = {"goes-to-quickbar"},
     subgroup = "energy-pipe-distribution",
     order = "a[energy]-p3[powered-floor-circuit-tile]",
     stack_size = 50,
@@ -164,6 +161,7 @@ data:extend({
     minable = {hardness = 0.2, mining_time = 0.5, result = "powered-floor-widget"},
     max_health = 120,
     corpse = "small-remnants",
+    draw_copper_wires = false,
     resistances =
     {
       {
@@ -218,6 +216,8 @@ data:extend({
     minable = {hardness = 0.2, mining_time = 0.5, result = "powered-floor-circuit-widget"},
     max_health = 120,
     corpse = "small-remnants",
+    draw_copper_wires = false,
+    draw_circuit_wires = false,
     resistances =
     {
       {
@@ -517,8 +517,8 @@ data:extend({
 			count = 40,
 			ingredients =
 			{
-				{"science-pack-1", 1},
-				{"science-pack-2", 1}
+				{"automation-science-pack", 1},
+				{"logistic-science-pack", 1}
 			},
 			time = 30
 		},

@@ -41,7 +41,10 @@ end
 -- Add the widget
 function RobotBuiltTile(event)
     -- game.print("RobotBuiltTile")
-    IncludePoweredWidget(event.tiles, event.robot.surface)
+    if(event.robot ~= nil and event.robot.surface ~= nil)
+    then 
+       IncludePoweredWidget(event.tiles, event.robot.surface)
+    end
 
 end
 
@@ -135,7 +138,7 @@ function IncludePoweredWidget(tiles, surface)
 			else
 				widget_name = "powered-floor-widget"
 			end
-			game.print("IncludePowered add " .. widget_name)
+			-- game.print("IncludePowered add " .. widget_name)
 			pf_entity = surface.create_entity{name = widget_name, position = {X,Y}, force = game.forces.neutral}
 			pf_entity.destructible = false
 

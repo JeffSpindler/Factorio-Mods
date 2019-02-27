@@ -22,3 +22,9 @@ Adds tiles which provide power to whatever's sitting on top of them. Also adds a
 ### 0.1.3
 * Fixes crashing issues with 16.18
 
+### 0.2.5
+* Hide the wires
+
+### 0.2.6
+* fix crashing issue
+
