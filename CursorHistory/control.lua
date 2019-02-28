@@ -279,7 +279,7 @@ end
 local function quantity_in_player_inventory(player_index, name)
 
 	return 
-		quantity_in_player_quickbar_inventory(player_index, name) +
+		-- quantity_in_player_quickbar_inventory(player_index, name) +
 		quantity_in_player_main_inventory(player_index, name)
 	
 end
@@ -362,14 +362,14 @@ local function select_history_item(player, history, direction)
 			cursor_stack.set_stack(new_stack)
 			local inventory
 			local source
-			if quantity_in_player_quickbar_inventory(player.index, current_name) > 0
-			then
-				inventory = player.get_inventory(defines.inventory.player_quickbar)
-				source = "quickbar"
-			else	
+			-- if quantity_in_player_quickbar_inventory(player.index, current_name) > 0
+			-- then
+			--	inventory = player.get_inventory(defines.inventory.player_quickbar)
+			--	source = "quickbar"
+			-- else	
 				inventory = player.get_inventory(defines.inventory.player_main)
 				source = "main"
-			end
+			-- end
 			global.curhist_source = source
 			inventory.remove(new_stack)				
 		else

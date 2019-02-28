@@ -1,11 +1,11 @@
 {
   "name": "CursorHistory",
   "author": "Theanderblast",
-  "version": "0.1.3",
+  "version": "0.2.4",
   "title": "Cursor History",
   "homepage": "",
   "description": "Access what was in your cursor/hand via hotkey",
-  "factorio_version":"0.16",
+  "factorio_version":"0.17",
   "dependencies": ["base >= 0.16.4"]
 
 }
