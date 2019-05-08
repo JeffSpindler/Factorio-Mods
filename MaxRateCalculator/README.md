@@ -70,3 +70,5 @@ Fix for crash on player death when using selection tool
 Calculates rates for mining drills and pumpjacks (however, not sulfuric acid consumption for uranium mining)
 
 ### 3.0.20 0.17 support.  Removed mining calculations.  Needs general rate re-testing
+
+### 3.1.21 Max Rate Calculator selection tool and 4 function calculator available on the quickbar

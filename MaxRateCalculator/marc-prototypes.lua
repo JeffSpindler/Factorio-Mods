@@ -15,7 +15,8 @@ data:extend(
 	{
 		type = "selection-tool",
 		name = "max-rate-calculator",
-		icon = "__MaxRateCalculator__/graphics/max-rate-calculator.png",
+		show_in_library = true,
+		icon = "__MaxRateCalculator__/graphics/max-rate-calculator32.png",
 		flags = {"hidden"},
 		subgroup = "tool",
 		order = "c[automated-construction]-b[tree-deconstructor]",
@@ -28,4 +29,38 @@ data:extend(
 		selection_cursor_box_type = "entity",
 		alt_selection_cursor_box_type = "not-allowed",
 	}
+
+	,
+	{
+		type = "shortcut",
+		name = "max-rate-shortcut",
+		order = "b[blueprints]-h[max-rate-calc]",
+		action = "lua",
+		toggleable = false,
+		icon =
+		{
+		  filename = "__MaxRateCalculator__/graphics/max-rate-calculator64.png",
+		  priority = "extra-high-no-scale",
+		  size = 64,
+		  scale = 1,
+		  flags = {"icon"}
+		}
+    }
+	,
+	{
+		type = "shortcut",
+		name = "marc_calc_4func",
+		order = "b[blueprints]-h[max-rate-calc]",
+		action = "lua",
+		toggleable = true,
+		icon =
+		{
+		  filename = "__MaxRateCalculator__/graphics/calculator.png",
+		  priority = "extra-high-no-scale",
+		  size = 64,
+		  scale = 1,
+		  flags = {"icon"}
+		}
+    }
+
 })

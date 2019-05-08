@@ -951,6 +951,20 @@ local function on_hotkey_main(event)
 
 end
 
+
+local function max_rate_shortcut(event)
+	debug_print("Max Rate Shortcut")
+	if event.prototype_name == "max-rate-shortcut"
+	then
+		on_hotkey_main(event)
+    elseif event.prototype_name == "marc_calc_4func"
+    then
+    	local player = game.players[event.player_index]
+    	toggle_calculator(player)
+	end
+end
+
+
 -- ----------------------------------------------------------------
 
 -- user has clicked somewhere.  If clicked on any gui item name that starts with "marc_..."
@@ -1050,6 +1064,8 @@ end
 script.on_event( defines.events.on_gui_selection_state_changed, on_gui_selection )
 
 script.on_event( "marc_hotkey", on_hotkey_main )
+
+script.on_event( defines.events.on_lua_shortcut, max_rate_shortcut )
 
 script.on_event( defines.events.on_gui_click, on_gui_click)
 
