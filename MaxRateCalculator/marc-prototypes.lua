@@ -15,9 +15,9 @@ data:extend(
 	{
 		type = "selection-tool",
 		name = "max-rate-calculator",
-		show_in_library = true,
+		show_in_library = false,
 		icon = "__MaxRateCalculator__/graphics/max-rate-calculator32.png",
-		flags = {"hidden"},
+		flags = {"hidden", "only-in-cursor"},
 		subgroup = "tool",
 		order = "c[automated-construction]-b[tree-deconstructor]",
 		stack_size = 1,

@@ -72,3 +72,9 @@ Calculates rates for mining drills and pumpjacks (however, not sulfuric acid con
 ### 3.0.20 0.17 support.  Removed mining calculations.  Needs general rate re-testing
 
 ### 3.1.21 Max Rate Calculator selection tool and 4 function calculator available on the quickbar
+
+### 3.1.22 Fix probablistic calculations (uranium processing)
+
+### 3.1.23 Fix old-style probablistic calculations (Bob's Greenhouse)
+
+### 3.1.24 Use only-in-cursor flag to keep selection tool out of inventory.  Attempt at thumbnail.

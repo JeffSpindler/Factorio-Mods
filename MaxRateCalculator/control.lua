@@ -717,15 +717,37 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 	-- table
 	for _, prod in ipairs(entity.get_recipe().products)
 	do
+	    local chance
 		local amount
-		if prod.amount ~= nil
-		then
-			debug_print("prod amount, modeffects.prod " .. prod.name .. " " .. prod.amount .. "," .. modeffects.prod )
-			amount = prod.amount 
-		else
-			-- handle if Product has probability not amount, like for centrifuges sometimes
-			amount = prod.probability * (prod.amount_min + prod.amount_max) / 2
-		end
+		-- sometime in 0.17 factorio changed uranium recipe to use a probability value  * amount
+		-- rather than probability with a range of amount_min and amount_max
+		-- but some mods like Bob's Greenhouse still was using a range
+	    if prod.probability ~= nil
+	    then 
+	    	debug_print("probability is " .. prod.probability)
+	    	chance = prod.probability
+	    	if prod.amount_min ~= nil
+	    	then
+	    	amount = chance * (prod.amount_min + prod.amount_max) / 2
+	    	else
+	    	   amount = prod.amount * chance
+	    	end
+	    else
+	    	debug_print("probability is nil")
+	    	chance = 1
+	    	
+
+			if prod.amount ~= nil
+			then
+				debug_print("prod amount, modeffects.prod " .. prod.name .. " " .. prod.amount .. "," .. modeffects.prod )
+				amount = prod.amount 
+			else
+				amount =  (prod.amount_min + prod.amount_max) / 2
+			end
+    	
+	    end	   
+	
+
 		-- gotta handle super beacons - they can affect prod too
 		debug_print("calc_assembler " .. prod.name .. " amount " .. amount .. " modeffects " .. ( 1 + modeffects.prod) .. " cspeed " .. crafting_speed .. " crafting_time" .. crafting_time)
 		amount = amount * ( 1 + modeffects.prod + beacon_modeffects.prod) *  crafting_speed / crafting_time
