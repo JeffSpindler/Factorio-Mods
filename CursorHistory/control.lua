@@ -115,16 +115,25 @@ local function update_gui(player)
 		end
 		for k,v in ipairs(history.list)
 		do		
-			gui1.add({type = "sprite-button", 
-						name = "curhist_button".. k, 											
-						style = "curhist_sprite_act_style",
-						sprite = "item/" .. v.name})
-			if k == history.position
+
+			if v.sprint ~= nil
 			then
-						gui1.add({type = "sprite", 
-									name = "curhist_button_nert", 											
-									style = "curhist_sprite_nert_style",
-						sprite = "curhist_nert_sprite"})
+				local sprite_name = "item/" .. v.sprite
+				debug_print("check sprite path " .. sprite_name)
+				if gui1.is_valid_sprite_path(sprite_name)
+				then
+					gui1.add({type = "sprite-button", 
+								name = "curhist_button".. k, 											
+								style = "curhist_sprite_act_style",
+								sprite = sprite_name})
+					if k == history.position
+					then
+								gui1.add({type = "sprite", 
+											name = "curhist_button_nert", 											
+											style = "curhist_sprite_nert_style",
+								sprite = "curhist_nert_sprite"})
+					end
+				end
 			end
 		end
 	end
@@ -245,42 +254,22 @@ local function on_player_cursor_stack_changed(event)
 	if not history.scrolling
 	then
 		local thing = { name=cursor_stack.name }
-		global.curhist_source = "(unknown)"
 		add_to_history(player, history, thing)
 	end
 end
 
--- ----------------------------------------------------------------
-
-local function quantity_in_player_quickbar_inventory(player_index, name)
-
-	local player = game.players[player_index]
-	inventory = player.get_inventory(defines.inventory.player_quickbar)
-	if inventory == nil	then return 0	end
-	count = inventory.get_item_count(name)
-	debug_print("quantity_in_player_quickbar_inventory " .. count .. " name " .. name)
-	return count
-end
-
--- ----------------------------------------------------------------
-
-local function quantity_in_player_main_inventory(player_index, name)
-
-	local player = game.players[player_index]
-	inventory = player.get_inventory(defines.inventory.player_main)
-	if inventory == nil	then return 0	end
-	count = inventory.get_item_count(name)
-	debug_print("quantity_in_player_main_inventory " .. count .. " name " .. name)
-	return count
-end
 
 -- ----------------------------------------------------------------
 
 local function quantity_in_player_inventory(player_index, name)
 
-	return 
-		-- quantity_in_player_quickbar_inventory(player_index, name) +
-		quantity_in_player_main_inventory(player_index, name)
+	local player = game.players[player_index]
+
+	inventory = player.get_inventory(defines.inventory.character_main)
+	if inventory == nil	then return 0	end
+	count = inventory.get_item_count(name)
+	debug_print("quantity_in_player_main_inventory " .. count .. " name " .. name)
+	return count
 	
 end
 
@@ -348,12 +337,10 @@ local function select_history_item(player, history, direction)
 		
 		
 		local old_items
-		local old_source = "blurk"
 		
 		if cursor_stack.valid_for_read
 		then
 			old_items = { name=cursor_stack.name, count=cursor_stack.count }
-			old_source = global.curhist_source
 		end
 		
 		if cursor_stack.can_set_stack(new_stack)
@@ -361,16 +348,8 @@ local function select_history_item(player, history, direction)
 			debug_print("set it")
 			cursor_stack.set_stack(new_stack)
 			local inventory
-			local source
-			-- if quantity_in_player_quickbar_inventory(player.index, current_name) > 0
-			-- then
-			--	inventory = player.get_inventory(defines.inventory.player_quickbar)
-			--	source = "quickbar"
-			-- else	
-				inventory = player.get_inventory(defines.inventory.player_main)
-				source = "main"
-			-- end
-			global.curhist_source = source
+			inventory = player.get_inventory(defines.inventory.character_main)
+
 			inventory.remove(new_stack)				
 		else
 			debug_print("can't set stack")
@@ -379,39 +358,12 @@ local function select_history_item(player, history, direction)
 		if old_items ~= nil
 		then
 			debug_print(" put " .. old_items.name .. " " .. old_items.count .. " back" )
-			if old_source == nil
-			then
-				debug_print("old_source is nil, WTF?")
-				old_source = "main"
-			end
 			
-			local main_inventory = player.get_inventory(defines.inventory.player_main)
-			local quickbar_inventory = player.get_inventory(defines.inventory.player_quickbar)
-			if old_source == "main"
-			then
-				inventory = main_inventory
-				debug_print("os main")
-			elseif old_source == "quickbar"
-			then
-				debug_print("os qb")
-				inventory = player.get_inventory(defines.inventory.player_quickbar)
-			else
-				-- unknown   Try to put in quickbar first
-				inventory = player.get_inventory(defines.inventory.player_quickbar)
-			end
-			 -- convert to SimpleItemStack
+			local inventory = player.get_inventory(defines.inventory.character_main)
+		    
 			if inventory.can_insert(old_items)
 			then
 				local actually_insertered_count = inventory.insert(old_items)
-				debug_print(" actually put " .. actually_insertered_count .. " back to inventory source " .. old_source)
-			elseif main_inventory.can_insert(old_items)
-			then
-				local actually_insertered_count = main_inventory.insert(old_items)
-				debug_print(" actually put " .. actually_insertered_count .. " back to main inventory")
-			elseif quickbar_inventory.can_insert(old_items)
-			then
-				local actually_insertered_count = quickbar_inventory.insert(old_items)
-				debug_print(" actually put " .. actually_insertered_count .. " back to quickbar inventory")
 			else
 				game.players[player.index].print("Can't put cursor item back into inventory")
 			end
