@@ -116,6 +116,13 @@ end
 
 -- ----------------------------------------------------------------
 
+local function get_gui_root(player)
+	-- return player.gui.left
+	return player.gui.screen
+end
+
+-- ----------------------------------------------------------------
+
 -- fill out the first part of a row with the icon and the rate.  Used for both inputs and outputs
 local function build_gui_row(guirow, name, count, rownum, machine_count, unit_type, inout_data)
 	if machine_count == nil
@@ -184,8 +191,9 @@ end
 -- scale the count based on the unit.
 -- some rate units require more than just the multiplier/divisor in the g_marc_units table
 local function scale_rate(player, name, count)
+	local root = get_gui_root(player)
 
-	local selected = player.gui.left.marc_gui_top.marc_gui_upper.maxrate_units.selected_index
+	local selected = root.marc_gui_top.marc_gui_upper.maxrate_units.selected_index
 	local unit_entry = g_marc_units[selected]
 	local divisor = unit_entry.divisor
 	local multiplier = unit_entry.multiplier
@@ -251,6 +259,7 @@ local function write_marc_gui(player, inout_data)
 	local machines = inout_data.machines
 	local machines_fed = inout_data.machines_fed or {}
 	inout_data.clickable_values = {}
+	local root = get_gui_root(player)
 	
 	-- count input, output items and number in common between them
 	local input_items = 0
@@ -273,43 +282,46 @@ local function write_marc_gui(player, inout_data)
 	if input_items == 0 and output_items == 0
 	then
 		-- nothing to see here, move on
-		if player.gui.left.marc_gui_top
+		if root.marc_gui_top
 		then
-			player.gui.left.marc_gui_top.destroy()
+			root.marc_gui_top.destroy()
 		end
 		return
 	end
 	
 	
-	player.gui.left.add({type = "frame", name = "marc_gui_top", direction = "vertical"})
+	root.add({type = "frame", name = "marc_gui_top", direction = "vertical", caption={"marc-gui-top-label"}})
 	
-	local marc_gui_top = player.gui.left.marc_gui_top
+	local marc_gui_top = root.marc_gui_top
 	local marc_gui_top1 = marc_gui_top.add({type = "flow", name = "marc_gui_top1", direction = "horizontal"})
-	marc_gui_top1.add({type = "label", name="marc_top_label", caption={"marc-gui-top-label"}})
+	-- marc_gui_top1.add({type = "label", name="marc_top_label", caption={"marc-gui-top-label"}})
 	
-	-- can't figure out a nicer way to right justify the close button
-	if both_input_and_output_items > 0
-	then
-		marc_gui_top1.add({type = "label", name = "marc_top1_spacer" , caption = "                                                                                                     "})
-	else
-		marc_gui_top1.add({type = "label", name = "marc_top1_spacer" , caption = "                                                      "})
-	end
+	
+		-- upper section has Rate <dropdown> <close button>
+		local marc_gui_upper = marc_gui_top.add({type = "flow", name = "marc_gui_upper", direction = "horizontal"})
 
-	marc_gui_top1.add({type = "sprite-button", sprite = "sprite_marc_calculator", name = "marc_calculator_button" ,align = "right", style = "sprite_obj_marc_style"})
-
-	marc_gui_top1.add({type = "sprite-button", sprite = "sprite_marc_close", name = "marc_close_button" ,align = "right", style = "sprite_obj_marc_style"})
+	
 
 	
 	
-	-- upper section has Rate <dropdown> <close button>
-	local marc_gui_upper = marc_gui_top.add({type = "flow", name = "marc_gui_upper", direction = "horizontal"})
 	marc_gui_upper.add({type = "label", name="marc_upper_rate_label", caption={"marc-gui-rate-colon"}, tooltip={"marc-gui-tt-rate-select"}})
 	
 	init_selected_units(player.index)
 	local ix = global.marc_selected_units[player.index]
 	marc_gui_upper.add({type="drop-down", name="maxrate_units", items=build_units_dropdown_list(), selected_index=ix, tooltip={"marc-gui-tt-rate-select"}})
 	
+		-- can't figure out a nicer way to right justify the close button
+		if both_input_and_output_items > 0
+		then
+			marc_gui_upper.add({type = "label", name = "marc_top1_spacer" , caption = "                                                                                                     "})
+		else
+			marc_gui_upper.add({type = "label", name = "marc_top1_spacer" , caption = "                                                      "})
+		end
 	
+		marc_gui_upper.add({type = "sprite-button", sprite = "sprite_marc_calculator", name = "marc_calculator_button" ,align = "right", style = "sprite_obj_marc_style"})
+	
+		marc_gui_upper.add({type = "sprite-button", sprite = "sprite_marc_close", name = "marc_close_button" ,align = "right", style = "sprite_obj_marc_style"})
+
 	
 	
 	-- main marc gui has two frames, one for inputs, one for outputs
@@ -318,7 +330,7 @@ local function write_marc_gui(player, inout_data)
 	-- marc_gui contains two frames, one for inputs and one for outputs
 
 	-- what units are we displaying in?
-	local selected = player.gui.left.marc_gui_top.marc_gui_upper.maxrate_units.selected_index
+	local selected = root.marc_gui_top.marc_gui_upper.maxrate_units.selected_index
 	local unit_entry = g_marc_units[selected]
 	if unit_entry == nil
 	then
@@ -464,10 +476,12 @@ end
 -- show the gui with the rate calculations
 local function open_gui(event, inout_data)
 
+
 	local player = game.players[event.player_index]
-	if player.gui.left.marc_gui_top
+	local root = get_gui_root(player)
+	if root.marc_gui_top
 	then
-		player.gui.left.marc_gui_top.destroy()
+		root.marc_gui_top.destroy()
 	end
 	
 	-- script.on_event(defines.events.on_tick, on_tick)
@@ -672,20 +686,20 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 
 	crafting_speed = crafting_speed * ( 1 + total_speed_effect)
 	-- how long does the item take to craft if no modules and crafting speed was 1?  It's in the recipe.energy!
-	crafting_time = entity.get_recipe().energy
+	crafting_time = (entity.get_recipe() or entity.previous_recipe) .energy
 	
 	debug_print("crafting time " .. crafting_time .. " modeffects.speed " .. modeffects.speed .. " beacon_modeffects.speed " .. beacon_modeffects.speed )
 	
 	if(crafting_time == 0)
 	then
 		crafting_time = 1
-		debug_print("entity.get_recipe().energy = 0, wtf?")
+		debug_print("(entity.get_recipe() or entity.previous_recipe) .energy = 0, wtf?")
 	end
 	
 
 	-- for all the ingredients in the recipe, calculate the rate
 	-- they're consumed at.  Add to the inputs table.
-	for _, ingred in ipairs(entity.get_recipe().ingredients)
+	for _, ingred in ipairs((entity.get_recipe() or entity.previous_recipe) .ingredients)
 	do
 		local amount = ingred.amount * crafting_speed / crafting_time
 		if inout_data.inputs[ingred.name] ~= nil
@@ -715,7 +729,7 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 	-- for all the products in the recipe (usually just one)
 	-- calculate the rate they're produced at and add each product to the outputs
 	-- table
-	for _, prod in ipairs(entity.get_recipe().products)
+	for _, prod in ipairs((entity.get_recipe() or entity.previous_recipe) .products)
 	do
 	    local chance
 		local amount
@@ -879,7 +893,7 @@ script.on_event(defines.events.on_player_selected_area,
 			
 			if entity.type == "assembling-machine" or entity.type == "furnace"
 			then		
-				if entity.get_recipe() ~= nil
+				if (entity.get_recipe() or entity.previous_recipe)  ~= nil
 				then
 					local beacon_modeffects = { speed = 0, prod = 0 }
 					if entity.prototype.module_inventory_size > 0					
@@ -997,6 +1011,7 @@ local function on_gui_click(event)
 	local marc_prefix = "marc_"
 	local possible_marc_prefix = string.sub( event_name, 1, string.len(marc_prefix) )
 	local player = game.players[event.player_index]
+	local root = get_gui_root(player)
 	
 	local marcalc_prefix = "marcalc_"
 	local possible_marcalc_prefix = string.sub( event_name, 1, string.len(marcalc_prefix))
@@ -1031,9 +1046,20 @@ local function on_gui_click(event)
 			return
 		end
 	
-		if player.gui.left.marc_gui_top then
-			player.gui.left.marc_gui_top.destroy()
-			hide_calculator(player)
+		if root.marc_gui_top then
+		    if event_name == "marc_close_button"
+		    then
+				debug_print("destroy it " ..event_name)
+				root.marc_gui_top.destroy()
+				hide_calculator(player)
+			end
+		elseif event_name == "marc_close_button"
+		then
+			debug_print("old window") 
+			if player.gui.left.marc_gui_top then
+				player.gui.left.marc_gui_top.destroy()
+				hide_calculator(player)
+			end
 		end
 
 	end
@@ -1045,15 +1071,16 @@ local function on_gui_selection(event)
 
 	local event_name = event.element.name
 	local player = game.players[event.player_index]
+	local root = get_gui_root(player)
 
 		
 	if event_name == "maxrate_units"
 	then
-		local selected = player.gui.left.marc_gui_top.marc_gui_upper.maxrate_units.selected_index
+		local selected = root.marc_gui_top.marc_gui_upper.maxrate_units.selected_index
 		global.marc_selected_units[event.player_index] = selected
 		unit_entry = g_marc_units[selected]
 		debug_print("selected " .. unit_entry.name .. " " .. unit_entry.multiplier .. "/" .. unit_entry.divisor)
-		player.gui.left.marc_gui_top.destroy()
+		root.marc_gui_top.destroy()
 		if global.marc_inout_data_by_player == nil -- by_player is new, may not exist in old save
 		then
 			open_gui(event, global.marc_inout_data)

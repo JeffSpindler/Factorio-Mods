@@ -19,6 +19,12 @@ end
 
 -- ----------------------------------------------------------------
 
+local function get_gui_root(player)
+	return player.gui.screen
+end
+
+-- ----------------------------------------------------------------
+
 local function init_context(player)
 	global.marcalc_context = global.marcalc_context or {}
 	
@@ -31,9 +37,10 @@ end
 -- ----------------------------------------------------------------
 
 local function destroy_calculator(player)
-	if player.gui.left.marcalc
+	local root = get_gui_root(player)
+	if root.marcalc
 	then
-		player.gui.left.marcalc.destroy()
+		root.marcalc.destroy()
 	end
 	
 end
@@ -43,6 +50,7 @@ end
 
 
 local function update_display(player,msg)
+	local root = get_gui_root(player)
 	if msg == nil or msg == ""
 	then
 	    -- bug repored by EugeneBeetle indicated we somehow got in here with current_value = nil
@@ -57,24 +65,25 @@ local function update_display(player,msg)
 		   and global.marcalc_context[player.index].decimal_place == 10
 		then
 			debug_print("update_display() add the dot")
-			player.gui.left.marcalc.marcalc_display.caption = tostring(global.marcalc_context[player.index].current_value) .. "."
+			root.marcalc.marcalc_display.caption = tostring(global.marcalc_context[player.index].current_value) .. "."
 		else
-			player.gui.left.marcalc.marcalc_display.caption = global.marcalc_context[player.index].current_value
+			root.marcalc.marcalc_display.caption = global.marcalc_context[player.index].current_value
 		end
 	else
-		player.gui.left.marcalc.marcalc_display.caption = msg
+		root.marcalc.marcalc_display.caption = msg
 	end
 end
 
 -- ----------------------------------------------------------------
 
 function show_calculator(player)
+	local root = get_gui_root(player)
 	destroy_calculator(player)
 	
 	init_context(player)
 	
 
-	marcalc = player.gui.left.add({type = "frame", name = "marcalc", direction = "vertical"})
+	marcalc = root.add({type = "frame", name = "marcalc", direction = "vertical", caption="Calc"})
 	marcalc_display = marcalc.add({type = "textfield", name = "marcalc_display", caption = global.marcalc_context[player.index].current_value })
 
 	marcalc_mem = marcalc.add({type = "flow", name = "marcalc_mem", direction = "horizontal"})
@@ -131,7 +140,8 @@ end
 
 function toggle_calculator(player)
 	init_context(player)
-	if player.gui.left.marcalc
+	local root = get_gui_root(player)
+	if root and root.marcalc
 	then
 		hide_calculator(player)
 	else
@@ -311,8 +321,9 @@ end
 -- ----------------------------------------------------------------
 
 local function process_backspace_key(player, key)
+	local root = get_gui_root(player)
 	debug_print("process_backspace_key(" .. key .. ")")
-	local old_text = player.gui.left.marcalc.marcalc_display.caption
+	local old_text = root.marcalc.marcalc_display.caption
 	local old_len = #old_text
 	text = string.sub(old_text, 1, old_len -1)
 	debug_print("process_backspace_key(" .. key .. ") old_text " .. old_text .. " old_len " .. old_len .. " text " .. text .. 
@@ -381,16 +392,17 @@ end
 function marcalc_on_gui_text_changed(event)
 	local player_index = event.player_index
 	local player = game.players[event.player_index]
+	local root = get_gui_root(player)
 	local element = event.element
-	if element.name ~= "marcalc_display" or player.gui.left.marcalc == nil
+	if element.name ~= "marcalc_display" or root.marcalc == nil
 	then
 		return
 	end
-	local text = player.gui.left.marcalc.marcalc_display.text
+	local text = root.marcalc.marcalc_display.text
 
 	
-	debug_print("marcalc_on_gui_text_changed element.name " .. element.name .. " text " .. text .. " caption " .. player.gui.left.marcalc.marcalc_display.caption)
-	player.gui.left.marcalc.marcalc_display.caption = text
+	debug_print("marcalc_on_gui_text_changed element.name " .. element.name .. " text " .. text .. " caption " .. root.marcalc.marcalc_display.caption)
+	root.marcalc.marcalc_display.caption = text
 	if element.name == "marcalc_display"
 	then
 		set_current_value_to_text(player, text)
@@ -411,7 +423,8 @@ end
 -- ----------------------------------------------------------------
 
 function marcalc_clickable_value_clicked(player, val) -- a value in the main Max Rate Calculator has been clicked on.  Paste into current value
-	if player.gui.left.marcalc ~= nil
+	local root = get_gui_root(player)
+	if root ~=nil and root.marcalc ~= nil
 	then
 		local text = tostring(val)
 		set_current_value_to_text(player, text)

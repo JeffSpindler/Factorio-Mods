@@ -78,3 +78,7 @@ Calculates rates for mining drills and pumpjacks (however, not sulfuric acid con
 ### 3.1.23 Fix old-style probablistic calculations (Bob's Greenhouse)
 
 ### 3.1.24 Use only-in-cursor flag to keep selection tool out of inventory.  Attempt at thumbnail.
+
+### 3.2.25 Window is moveable
+
+### 3.2.27 Use most recent recipe if furnace has no current recipe
