@@ -82,3 +82,5 @@ Calculates rates for mining drills and pumpjacks (however, not sulfuric acid con
 ### 3.2.25 Window is moveable
 
 ### 3.2.27 Use most recent recipe if furnace has no current recipe
+
+### 3.2.28 Fix no recipe crash

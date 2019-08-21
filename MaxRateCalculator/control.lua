@@ -84,6 +84,21 @@ end
 
 -- ----------------------------------------------------------------
 
+local function get_entity_recipe(entity)
+	if entity.type == "furnace"
+	then
+		return (entity.get_recipe() or entity.previous_recipe)				
+	elseif entity.type == "assembling-machine"				
+	then 
+		return entity.get_recipe() 
+	else
+		return nil
+	end
+end
+
+
+-- ----------------------------------------------------------------
+
 -- Return a flag indicating if name refers to an item (such as iron-plate) or a fluid
 local function get_item_or_fluid(name)
 	local proto = game.item_prototypes[name]
@@ -686,7 +701,7 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 
 	crafting_speed = crafting_speed * ( 1 + total_speed_effect)
 	-- how long does the item take to craft if no modules and crafting speed was 1?  It's in the recipe.energy!
-	crafting_time = (entity.get_recipe() or entity.previous_recipe) .energy
+	crafting_time = get_entity_recipe(entity).energy
 	
 	debug_print("crafting time " .. crafting_time .. " modeffects.speed " .. modeffects.speed .. " beacon_modeffects.speed " .. beacon_modeffects.speed )
 	
@@ -699,7 +714,7 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 
 	-- for all the ingredients in the recipe, calculate the rate
 	-- they're consumed at.  Add to the inputs table.
-	for _, ingred in ipairs((entity.get_recipe() or entity.previous_recipe) .ingredients)
+	for _, ingred in ipairs(get_entity_recipe(entity) .ingredients)
 	do
 		local amount = ingred.amount * crafting_speed / crafting_time
 		if inout_data.inputs[ingred.name] ~= nil
@@ -729,7 +744,7 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 	-- for all the products in the recipe (usually just one)
 	-- calculate the rate they're produced at and add each product to the outputs
 	-- table
-	for _, prod in ipairs((entity.get_recipe() or entity.previous_recipe) .products)
+	for _, prod in ipairs(get_entity_recipe(entity) .products)
 	do
 	    local chance
 		local amount
@@ -893,7 +908,7 @@ script.on_event(defines.events.on_player_selected_area,
 			
 			if entity.type == "assembling-machine" or entity.type == "furnace"
 			then		
-				if (entity.get_recipe() or entity.previous_recipe)  ~= nil
+				if get_entity_recipe(entity)  ~= nil
 				then
 					local beacon_modeffects = { speed = 0, prod = 0 }
 					if entity.prototype.module_inventory_size > 0					
