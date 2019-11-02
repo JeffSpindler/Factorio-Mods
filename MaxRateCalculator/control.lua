@@ -31,6 +31,8 @@ g_marc_units_default = 2 -- per minutes is the default
 local persec_format = "%16.3f"
 local permin_format = "%16.1f"
 
+global.marc_win_loc_x = 0
+global.marc_win_loc_y = 176 -- puts us just below rocket stats
 -- ----------------------------------------------------------------
 
 
@@ -136,6 +138,14 @@ local function get_gui_root(player)
 	return player.gui.screen
 end
 
+-- ----------------------------------------------------------------
+
+function destroy_marc_gui(player)
+	local root = get_gui_root(player)
+	global.marc_win_loc_x = root.marc_gui_top.location.x
+	global.marc_win_loc_y = root.marc_gui_top.location.y
+	root.marc_gui_top.destroy()
+end
 -- ----------------------------------------------------------------
 
 -- fill out the first part of a row with the icon and the rate.  Used for both inputs and outputs
@@ -299,7 +309,7 @@ local function write_marc_gui(player, inout_data)
 		-- nothing to see here, move on
 		if root.marc_gui_top
 		then
-			root.marc_gui_top.destroy()
+			destroy_marc_gui(player)
 		end
 		return
 	end
@@ -308,6 +318,17 @@ local function write_marc_gui(player, inout_data)
 	root.add({type = "frame", name = "marc_gui_top", direction = "vertical", caption={"marc-gui-top-label"}})
 	
 	local marc_gui_top = root.marc_gui_top
+	debug_print("marc location " .. root.marc_gui_top.location.x .. "," .. root.marc_gui_top.location.y)
+	if( global.marc_win_loc_x == nil )
+	then
+		global.marc_win_loc_x = 0
+	end
+	if( global.marc_win_loc_y == nil )
+	then
+		global.marc_win_loc_y = 172
+	end
+	root.marc_gui_top.location = { global.marc_win_loc_x, global.marc_win_loc_y }
+	debug_print("marc location " .. root.marc_gui_top.location.x .. "," .. root.marc_gui_top.location.y)
 	local marc_gui_top1 = marc_gui_top.add({type = "flow", name = "marc_gui_top1", direction = "horizontal"})
 	-- marc_gui_top1.add({type = "label", name="marc_top_label", caption={"marc-gui-top-label"}})
 	
@@ -1065,7 +1086,7 @@ local function on_gui_click(event)
 		    if event_name == "marc_close_button"
 		    then
 				debug_print("destroy it " ..event_name)
-				root.marc_gui_top.destroy()
+				destroy_marc_gui(player)
 				hide_calculator(player)
 			end
 		elseif event_name == "marc_close_button"
