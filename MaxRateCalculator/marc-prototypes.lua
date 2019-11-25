@@ -10,17 +10,33 @@
 -- invokes the hot key, and is destroyed when they finish selecting the area to
 -- be analyzed.   The tool is not craftable, and requires no research.
 
+local function shortcut_icon(name, size)
+	return {
+		filename = "__MaxRateCalculator__/graphics/"..name,
+		priority = "extra-high-no-scale",
+		size = size,
+		scale = 1,
+		mipmap_count = 2,
+		flags = {"icon"}
+	}
+end
+
 data:extend(
 {
 	{
 		type = "selection-tool",
 		name = "max-rate-calculator",
 		show_in_library = false,
-		icon = "__MaxRateCalculator__/graphics/max-rate-calculator32.png",
+		icons =
+		{
+			{icon='__MaxRateCalculator__/graphics/black.png', icon_size=1, scale=64},
+			{icon='__MaxRateCalculator__/graphics/max-rate-calculator-x32-white.png', icon_size=32, mipmap_count=2}
+		},
 		flags = {"hidden", "only-in-cursor"},
 		subgroup = "tool",
 		order = "c[automated-construction]-b[tree-deconstructor]",
 		stack_size = 1,
+		stackable = false,
 		icon_size = 32,
 		selection_color = { r = 0.6, g = 0.6, b = 0 },
 		alt_selection_color = { r = 0, g = 0, b = 1 },
@@ -36,15 +52,12 @@ data:extend(
 		name = "max-rate-shortcut",
 		order = "b[blueprints]-h[max-rate-calc]",
 		action = "lua",
+		associated_control_input = "marc_hotkey",
 		toggleable = false,
-		icon =
-		{
-		  filename = "__MaxRateCalculator__/graphics/max-rate-calculator64.png",
-		  priority = "extra-high-no-scale",
-		  size = 64,
-		  scale = 1,
-		  flags = {"icon"}
-		}
+		icon = shortcut_icon('max-rate-calculator-x32.png', 32),
+		disabled_icon = shortcut_icon('max-rate-calculator-x32-white.png', 32),
+		small_icon = shortcut_icon('max-rate-calculator-x24.png', 24),
+		disabled_small_icon = shortcut_icon('max-rate-calculator-x24-white.png', 24)
     }
 	,
 	{
@@ -53,14 +66,10 @@ data:extend(
 		order = "b[blueprints]-h[max-rate-calc]",
 		action = "lua",
 		toggleable = true,
-		icon =
-		{
-		  filename = "__MaxRateCalculator__/graphics/calculator.png",
-		  priority = "extra-high-no-scale",
-		  size = 64,
-		  scale = 1,
-		  flags = {"icon"}
-		}
+		icon = shortcut_icon('calculator-x32.png', 32),
+		disabled_icon = shortcut_icon('calculator-x32-white.png', 32),
+		small_icon = shortcut_icon('calculator-x24.png', 24),
+		disabled_small_icon = shortcut_icon('calculator-x24-white.png', 24)
     }
 
 })

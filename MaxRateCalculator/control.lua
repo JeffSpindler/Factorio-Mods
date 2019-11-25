@@ -171,7 +171,7 @@ local function build_gui_row(guirow, name, count, rownum, machine_count, unit_ty
 	
 	localized_name = proto.localised_name
 	
-	guirow.add({type = "sprite-button", sprite =  item_or_fluid .. "/" .. name, name = "marc_sprite" .. rownum, style = "sprite_obj_marc_style", tooltip = {"marc-gui-tt-item-sprite",localized_name, machine_count}})
+	guirow.add({type = "sprite-button", sprite =  item_or_fluid .. "/" .. name, name = "marc_sprite" .. rownum, style = "sprite_obj_marc_style", tooltip = {"marc-gui-tt-item-sprite",localized_name, machine_count}}).enabled = false
 	local label_name = "marc_per_min" .. rownum
 	guirow.add({type = "label", name = label_name, caption = string.format(persec_format, count ), tooltip={"marc-gui-tt-rate"} })
 	add_value_to_marcalc_clickable_list(inout_data, label_name, count)
@@ -218,7 +218,7 @@ end
 local function scale_rate(player, name, count)
 	local root = get_gui_root(player)
 
-	local selected = root.marc_gui_top.marc_gui_upper.maxrate_units.selected_index
+	local selected = root.marc_gui_top.marc_gui_content.marc_gui_upper.maxrate_units.selected_index
 	local unit_entry = g_marc_units[selected]
 	local divisor = unit_entry.divisor
 	local multiplier = unit_entry.multiplier
@@ -315,9 +315,20 @@ local function write_marc_gui(player, inout_data)
 	end
 	
 	
-	root.add({type = "frame", name = "marc_gui_top", direction = "vertical", caption={"marc-gui-top-label"}})
+	local marc_gui_top = root.add({type = "frame", name = "marc_gui_top", style = "dialog_frame", direction = "vertical"})
 	
-	local marc_gui_top = root.marc_gui_top
+	-- titlebar
+	local titlebar_flow = marc_gui_top.add({type = "flow", name = "marc_gui_top_flow", direction = "horizontal"})
+	titlebar_flow.style.vertical_align = "center"
+	titlebar_flow.style.top_margin = -3
+	titlebar_flow.add({type = "label", name = "marc_gui_top_label", style = "frame_title", caption={"marc-gui-top-label"}})
+	local titlebar_spacer = titlebar_flow.add({type = "empty-widget", name = "marc_gui_top_spacer", style = "draggable_space_header"})
+	titlebar_spacer.style.horizontally_stretchable = true
+	titlebar_spacer.style.height = 24
+	titlebar_spacer.style.right_margin = 7
+	titlebar_spacer.drag_target = marc_gui_top
+	titlebar_flow.add({type = "sprite-button", name = "marc_close_button", style = "close_button", sprite = "utility/close_white", hovered_sprite = "utility/close_black", clicked_sprite = "utility/close_black"})
+
 	debug_print("marc location " .. root.marc_gui_top.location.x .. "," .. root.marc_gui_top.location.y)
 	if( global.marc_win_loc_x == nil )
 	then
@@ -329,44 +340,30 @@ local function write_marc_gui(player, inout_data)
 	end
 	root.marc_gui_top.location = { global.marc_win_loc_x, global.marc_win_loc_y }
 	debug_print("marc location " .. root.marc_gui_top.location.x .. "," .. root.marc_gui_top.location.y)
-	local marc_gui_top1 = marc_gui_top.add({type = "flow", name = "marc_gui_top1", direction = "horizontal"})
-	-- marc_gui_top1.add({type = "label", name="marc_top_label", caption={"marc-gui-top-label"}})
-	
-	
-		-- upper section has Rate <dropdown> <close button>
-		local marc_gui_upper = marc_gui_top.add({type = "flow", name = "marc_gui_upper", direction = "horizontal"})
 
+	-- content frame
+	local marc_gui_content = marc_gui_top.add({type = "frame", name = "marc_gui_content", style = "window_content_frame_packed", direction = "vertical"})
 	
+	-- upper section has Rate <dropdown> <calculator button>
+	local marc_gui_upper = marc_gui_content.add({type = "frame", name = "marc_gui_upper", style = "subheader_frame", direction = "horizontal"})
+	marc_gui_upper.style.horizontally_stretchable = true
 
-	
-	
-	marc_gui_upper.add({type = "label", name="marc_upper_rate_label", caption={"marc-gui-rate-colon"}, tooltip={"marc-gui-tt-rate-select"}})
+	marc_gui_upper.add({type = "label", name="marc_upper_rate_label", style = "subheader_caption_label", caption={"marc-gui-rate-colon"}, tooltip={"marc-gui-tt-rate-select"}}).style.right_margin = 4
 	
 	init_selected_units(player.index)
 	local ix = global.marc_selected_units[player.index]
 	marc_gui_upper.add({type="drop-down", name="maxrate_units", items=build_units_dropdown_list(), selected_index=ix, tooltip={"marc-gui-tt-rate-select"}})
-	
-		-- can't figure out a nicer way to right justify the close button
-		if both_input_and_output_items > 0
-		then
-			marc_gui_upper.add({type = "label", name = "marc_top1_spacer" , caption = "                                                                                                     "})
-		else
-			marc_gui_upper.add({type = "label", name = "marc_top1_spacer" , caption = "                                                      "})
-		end
-	
-		marc_gui_upper.add({type = "sprite-button", sprite = "sprite_marc_calculator", name = "marc_calculator_button" ,align = "right", style = "sprite_obj_marc_style"})
-	
-		marc_gui_upper.add({type = "sprite-button", sprite = "sprite_marc_close", name = "marc_close_button" ,align = "right", style = "sprite_obj_marc_style"})
-
-	
+	marc_gui_upper.add({type = 'empty-widget', name = "marc_upper_spacer"}).style.horizontally_stretchable = true
+	marc_gui_upper.add({type = "sprite-button", sprite = "sprite_marc_calculator", name = "marc_calculator_button" , style = "tool_button", tooltip = {"shortcut-name.marc_calc_4func"}})
 	
 	-- main marc gui has two frames, one for inputs, one for outputs
-	local marc_gui = marc_gui_top.add({type = "flow", name = "marc_gui", direction = "horizontal"})
+	local marc_gui = marc_gui_content.add({type = "flow", name = "marc_gui", direction = "horizontal"})
+	marc_gui.style.margin = 4
 	
 	-- marc_gui contains two frames, one for inputs and one for outputs
 
 	-- what units are we displaying in?
-	local selected = root.marc_gui_top.marc_gui_upper.maxrate_units.selected_index
+	local selected = root.marc_gui_top.marc_gui_content.marc_gui_upper.maxrate_units.selected_index
 	local unit_entry = g_marc_units[selected]
 	if unit_entry == nil
 	then
@@ -387,7 +384,8 @@ local function write_marc_gui(player, inout_data)
 	if input_items > 0
 	then
 		-- frame to hold the rows of input items
-		gui_input_frame = marc_gui.add({type = "frame", name = "marc_inputs", direction = "vertical", caption = {"marc-gui-inputs"}})
+		gui_input_frame = marc_gui.add({type = "frame", name = "marc_inputs", style = "bordered_frame", direction = "vertical"})
+		gui_input_frame.add({type = "label", name = "marc_inputs_label", style = "caption_label", caption = {"marc-gui-inputs"}})
 		gui_input_scrollpane = gui_input_frame.add({type = "scroll-pane", name = "marc_inputs_pane", vertical_scroll_policy = "auto", style = "scroll_pane_marc_style",  direction = "vertical", caption = {"marc-gui-inputs"}})
 		
 		-- three columns - item icon, rate per second, rate per minute
@@ -422,7 +420,8 @@ local function write_marc_gui(player, inout_data)
 	--
 	if output_items > 0
 	then
-		gui_output_frame = marc_gui.add({type = "frame", name = "marc_outputs", direction = "vertical", caption = {"marc-gui-outputs"}})
+		gui_output_frame = marc_gui.add({type = "frame", name = "marc_outputs", style = "bordered_frame", direction = "vertical"})
+		gui_output_frame.add({type = "label", name = "marc_inputs_label", style = "caption_label", caption = {"marc-gui-outputs"}})
 		gui_output_scrollpane = gui_output_frame.add({type = "scroll-pane", name = "marc_outputs_pane", vertical_scroll_policy = "auto", style = "scroll_pane_marc_style",  direction = "vertical", caption = {"marc-gui-inputs"}})
 
 		-- if there were items both consumed and produced, we'll have two more columns to show the net result
@@ -1048,6 +1047,12 @@ local function on_gui_click(event)
 	local possible_marc_prefix = string.sub( event_name, 1, string.len(marc_prefix) )
 	local player = game.players[event.player_index]
 	local root = get_gui_root(player)
+
+	-- handle close button first
+	if event.element.name == "marcalc_close_button" then
+		hide_calculator(player)
+		return
+	end
 	
 	local marcalc_prefix = "marcalc_"
 	local possible_marcalc_prefix = string.sub( event_name, 1, string.len(marcalc_prefix))
@@ -1112,7 +1117,7 @@ local function on_gui_selection(event)
 		
 	if event_name == "maxrate_units"
 	then
-		local selected = root.marc_gui_top.marc_gui_upper.maxrate_units.selected_index
+		local selected = root.marc_gui_top.marc_gui_content.marc_gui_upper.maxrate_units.selected_index
 		global.marc_selected_units[event.player_index] = selected
 		unit_entry = g_marc_units[selected]
 		debug_print("selected " .. unit_entry.name .. " " .. unit_entry.multiplier .. "/" .. unit_entry.divisor)

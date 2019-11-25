@@ -83,8 +83,19 @@ function show_calculator(player)
 	init_context(player)
 	
 
-	marcalc = root.add({type = "frame", name = "marcalc", direction = "vertical", caption="Calc"})
+	marcalc = root.add({type = "frame", name = "marcalc", direction = "vertical"})
+	local titlebar = marcalc.add({type = "flow", name = "marcalc_titlebar", direction = "horizontal"})
+	titlebar.style.top_margin = -3
+	titlebar.style.vertical_align = 'center'
+	titlebar.add{type = "label", name = "marcalc_titlebar_label", style = "frame_title", caption = "Calc"}
+	local titlebar_spacer = titlebar.add({type = "empty-widget", name = "marcalc_titlebar_spacer", style = "draggable_space_header"})
+	titlebar_spacer.style.horizontally_stretchable = true
+	titlebar_spacer.style.height = 24
+	titlebar_spacer.style.right_margin = 7
+	titlebar_spacer.drag_target = marcalc
+	marcalc_close_button = titlebar.add({type = "sprite-button", name = "marcalc_close_button", style = "close_button", sprite = "utility/close_white", hovered_sprite = "utility/close_black", clicked_sprite = "utility/close_black"})
 	marcalc_display = marcalc.add({type = "textfield", name = "marcalc_display", caption = global.marcalc_context[player.index].current_value })
+	marcalc_display.style.width = 172
 
 	marcalc_mem = marcalc.add({type = "flow", name = "marcalc_mem", direction = "horizontal"})
 		marcalc_mem.add({type = "button", style="marcalc_button_style", caption = "ms", name="marcalc_button_MS"})
