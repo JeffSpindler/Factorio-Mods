@@ -26,3 +26,6 @@ In future releases, I've been thinking about adding a mod settings capability to
 
 ### 0.2.6
 * Fix for 0.17.35 player_main -> character_main 
+
+### 0.2.7
+* Support 0.18
