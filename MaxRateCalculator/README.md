@@ -86,3 +86,5 @@ Calculates rates for mining drills and pumpjacks (however, not sulfuric acid con
 ### 3.2.28 Fix no recipe crash
 
 ### 3.2.29 Save window location
+
+### 3.2.31 Factorio 0.18 support
