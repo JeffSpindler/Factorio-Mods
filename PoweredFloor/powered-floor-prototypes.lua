@@ -340,7 +340,7 @@ data:extend({
         }
       },
       map_color={r=70, g=90, b=85},
-      ageing=0,
+      pollution_absorption_per_second=0,
       vehicle_friction_modifier = concrete_vehicle_speed_modifier
 },
 
@@ -365,13 +365,13 @@ data:extend({
             size = 1
           },
           {
-            picture = "__PoweredFloor__/graphic/powered-floor-tile2.png",
+            picture = "__PoweredFloor__/graphic/powered-floor-circuit-tile2.png",
             count = 4,
             size = 2,
             probability = 0.08,
           },
           {
-            picture = "__PoweredFloor__/graphic/powered-floor-tile4.png",
+            picture = "__PoweredFloor__/graphic/powered-floor-circuit-tile4.png",
             count = 4,
             size = 4,
             probability = .10,  
@@ -424,7 +424,7 @@ data:extend({
         }
       },
       map_color={r=70, g=90, b=85},
-      ageing=0,
+      pollution_absorption_per_second=0,
       vehicle_friction_modifier = concrete_vehicle_speed_modifier
 },
 

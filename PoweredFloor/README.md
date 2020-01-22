@@ -28,3 +28,7 @@ Adds tiles which provide power to whatever's sitting on top of them. Also adds a
 ### 0.2.6
 * fix crashing issue
 
+### 0.2.7
+* Support Factorio 0.18.  
+* Fix circuit tile image issue for large blocks of tiles
+

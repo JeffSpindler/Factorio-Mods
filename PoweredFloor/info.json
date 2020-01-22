@@ -1,10 +1,10 @@
 {
   "name": "PoweredFloor",
   "author": "Theanderblast",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "title": "Powered floor",
   "homepage": "",
   "description": "Flooring that transmits power to adjacent objects",
-  "factorio_version":"0.17",
+  "factorio_version":"0.18",
   "dependencies": ["base >= 0.16.17"]
 }
