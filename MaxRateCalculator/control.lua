@@ -800,7 +800,16 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 
 		-- gotta handle super beacons - they can affect prod too
 		debug_print("calc_assembler " .. prod.name .. " amount " .. amount .. " modeffects " .. ( 1 + modeffects.prod) .. " cspeed " .. crafting_speed .. " crafting_time" .. crafting_time)
-		amount = amount * ( 1 + modeffects.prod + beacon_modeffects.prod) *  crafting_speed / crafting_time
+		local catalyst_amount = 0
+		if prod.catalyst_amount ~= nil
+		then
+			catalyst_amount = prod.catalyst_amount
+		end
+		local productivity = modeffects.prod + beacon_modeffects.prod
+		amount =  amount + (amount - catalyst_amount) * productivity
+		-- amount = amount * ( 1 + modeffects.prod + beacon_modeffects.prod) *  crafting_speed / crafting_time
+		-- amount = amount * ( 1 + productivity) *  crafting_speed / crafting_time
+		amount = amount * crafting_speed / crafting_time
 		if inout_data.outputs[prod.name] ~= nil
 		then
 			inout_data.outputs[prod.name] = inout_data.outputs[prod.name] + amount

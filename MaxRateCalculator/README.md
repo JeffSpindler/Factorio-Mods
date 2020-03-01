@@ -88,3 +88,5 @@ Calculates rates for mining drills and pumpjacks (however, not sulfuric acid con
 ### 3.2.29 Save window location
 
 ### 3.2.31 Factorio 0.18 support
+
+### 3.2.33 Use catalyst_amount for prod calcs.  Fixes issue with kovarex recipe
