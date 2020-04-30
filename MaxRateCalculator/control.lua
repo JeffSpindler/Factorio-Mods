@@ -533,17 +533,17 @@ local function calc_mod( modname, modeffects, modquant, effectivity )
 	debug_print("mod is " .. modname .. " quantity " .. modquant)
 	for effectname,effectvals in pairs(protoeffects)
 	do
-		debug_print("...effectname is " .. effectname .. " modquant " .. modquant)
+		-- debug_print("...effectname is " .. effectname .. " modquant " .. modquant)
 		for _,bonamount in pairs(effectvals) -- first item in pair seems to be always "bonus"
 		do
-			debug_print("...effectname,bonix,bon " .. effectname ..  "," .. bonamount)
+			-- debug_print("...effectname,bonix,bon " .. effectname ..  "," .. bonamount)
 			if effectname == "speed"
 			then
-				debug_print("...adjust speed by " .. ( bonamount * modquant ))
+				-- debug_print("...adjust speed by " .. ( bonamount * modquant ))
 				modeffects.speed = modeffects.speed + ( bonamount * modquant * effectivity)
 			elseif effectname == "productivity"
 			then
-				debug_print("...adjust productivity by " .. ( bonamount * modquant ))
+				-- debug_print("...adjust productivity by " .. ( bonamount * modquant ))
 				modeffects.prod = modeffects.prod + (bonamount * modquant  * effectivity)
 			end
 		end
@@ -572,13 +572,6 @@ local function calc_mods(entity, modeffects, effectivity)
 	return modeffects
 end
 
--- ----------------------------------------------------------------
-
-local function point_in_bounding_box(b, x, y)
-	
-	return x > b.left_top.x and x < b.right_bottom.x and
-	   y > b.left_top.y and y < b.right_bottom.y
-end
 
 -- ----------------------------------------------------------------
 
@@ -587,29 +580,19 @@ local function print_bounding_box(name, b)
 end
 
 -- ----------------------------------------------------------------
+-- thanks to Psihuis for this one:
 
-local function does_box_contain_box(b1, b2)
-	-- this will detect if b2 is inside b1
-	-- but won't if b1 is inside b2
-	debug_print("does_box_contain_box? ")
-	-- print_bounding_box(" ...b1", b1)
-	-- print_bounding_box(" ...b2" ,b2)
-	debug_print("===========")
-	local answer = false
-	local b2_left = b2.left_top.x
-	local b2_right = b2.right_bottom.x
-	local b2_top = b2.left_top.y
-	local b2_bottom = b2.right_bottom.y
-	
-	if point_in_bounding_box(b1, b2_left, b2_top) then answer = true end
-	if point_in_bounding_box(b1, b2_left, b2_bottom) then answer = true end
-	if point_in_bounding_box(b1, b2_right, b2_top) then answer = true end
-	if point_in_bounding_box(b1, b2_right, b2_bottom) then answer = true end
-	debug_print("answer is " .. boolstr(answer))
-	debug_print("-------------")
-	return answer
+local function do_boxes_intersect(a, b)
+    local a_left = a.left_top.x
+    local a_right = a.right_bottom.x
+    local a_top = a.left_top.y
+    local a_bottom = a.right_bottom.y
+    local b_left = b.left_top.x
+    local b_right = b.right_bottom.x
+    local b_top = b.left_top.y
+    local b_bottom = b.right_bottom.y
+    return (a_left <= b_right and a_right >= b_left) and (a_top <= b_bottom and a_bottom >= b_top)
 end
-
 -- ----------------------------------------------------------------
 
 local function is_machine_in_range_of_beacon(entity, beacon)
@@ -617,10 +600,20 @@ local function is_machine_in_range_of_beacon(entity, beacon)
 	local machine_selection_box = entity.prototype.selection_box
 	local beac_dist = game.entity_prototypes[beacon.name].supply_area_distance
 	
-	local beacon_left_top = {x = beacon.prototype.selection_box.left_top.x + beacon.position.x - beac_dist,
-							y = beacon.prototype.selection_box.left_top.y + beacon.position.y - beac_dist}
-	local beacon_right_bottom = {x = beacon.prototype.selection_box.right_bottom.x + beacon.position.x + beac_dist,
-							y = beacon.prototype.selection_box.right_bottom.y + beacon.position.y + beac_dist}
+	-- debug_print("beac prot selbox" .. beacon.prototype.selection_box.left_top.x .. " - " .. beacon.prototype.selection_box.right_bottom.y )
+	local beacsel_left = beacon.prototype.selection_box.left_top.x
+	local beacsel_top = beacon.prototype.selection_box.left_top.y
+	local beacsel_right = beacon.prototype.selection_box.right_bottom.x
+	local beacsel_bottom = beacon.prototype.selection_box.right_bottom.y
+	debug_print(beacsel_left .. " " .. beacsel_top .. " X " .. beacsel_right .. " " .. beacsel_bottom)
+
+	debug_print(beacsel_left .. " " .. beacsel_top .. " X " .. beacsel_right .. " " .. beacsel_bottom)
+	
+	local beacon_left_top = {x = beacsel_left + beacon.position.x - beac_dist,
+							y = beacsel_top + beacon.position.y - beac_dist}
+							
+	local beacon_right_bottom = {x = beacsel_right + beacon.position.x + beac_dist,
+							y = beacsel_bottom + beacon.position.y + beac_dist}
 	local beacon_box = { left_top = beacon_left_top, right_bottom = beacon_right_bottom }
 	
 	local machine_left_top = { x = entity.position.x + machine_selection_box.left_top.x,
@@ -630,11 +623,13 @@ local function is_machine_in_range_of_beacon(entity, beacon)
 
 	local machine_box = { left_top = machine_left_top, right_bottom = machine_right_bottom }
 	-- print_bounding_box("             machine_box", machine_box)
-	-- print_bounding_box("             beacon_box ", beacon_box)
-	
-	debug_print("call dbcb")
-	local ans = does_box_contain_box(beacon_box, machine_box)
-	debug_print("ans is " .. boolstr(ans))
+	-- debug_print("..........")
+	--print_bounding_box("             beacon_box ", beacon_box)
+	-- debug_print(",,,,,,,,,,")
+
+	-- local ans = does_box_contain_box(beacon_box, machine_box)
+	local ans = do_boxes_intersect(beacon_box, machine_box)
+
 	return ans
 end
 
@@ -652,7 +647,7 @@ local function check_beacons(surface, entity)
 	
 	if max_beacon_dist == -1
 	then
-		
+		debug_print("beacon distance was -1 so look")
 		for _,entity_proto in pairs(game.entity_prototypes)
 		do
 			
@@ -696,6 +691,8 @@ local function check_beacons(surface, entity)
 		end
 	end
 	
+	debug_print("check_beacons - Saw " .. beacons)
+	
 	return modeffects
 
 end
@@ -704,6 +701,25 @@ end
 
 -- for an individual assembler, calculate the rates all the inputs are used at and the outputs are produced at, per second
 local function calc_assembler(entity, inout_data, beacon_modeffects)
+
+		local prodproto = game.entity_prototypes[entity.name]
+		
+		if false
+		then
+			if prodproto ~= nil and prodproto.allowed_effects ~= nil
+			then
+			debug_print(prodproto.name .. " type ".. prodproto.type )
+				for thing,effect in pairs(prodproto.allowed_effects)
+				do
+					debug_print(entity.name .. " allowed_effect " .. prodproto.name .. " for " .. thing .. " is " .. boolstr(effect))
+				end
+			elseif prodproto ~= nil
+			then
+				debug_print( prodproto.name  .. " has no allowed_effects")
+			else
+				debug_print("bad proto")
+			end
+		end
 
 	-- get the machines base crafting speed, in cycles per second
 	local crafting_speed = entity.prototype.crafting_speed
@@ -718,11 +734,30 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 	then
 		total_speed_effect = -0.80
 	end
+	
+	-- issue reported for Pyanodon's alien life mod says some machines don't have consumption and pollution
+	-- in allowed effects.  I'm not seeing this in the prototype, nor in run-time tests, the fawogae plantations
+	-- do have consumption included in allowed_effects, and the plantation's water consumption is affected by
+	-- speed modules in beacons or in the plantation itself
+	-- Nonetheless, I'm excluding here the speed effect from consumption if that flag's not there
+	consumption_speed_effect = total_speed_effect
+	if  prodproto.allowed_effects ~= nil
+		and prodproto.allowed_effects["consumption"] ~= nil
+		and not prodproto.allowed_effects["consumption"]   
+	then
+		consumption_speed_effect = 0
+		debug_print("ignoring speed effect on consumption")
+	else 
+		debug_print("Using speed effect on consumption, its an allowed_effect")
+	end
+	
 	debug_print( "calc_assembler cspeed " .. crafting_speed .. " modspeed " .. modeffects.speed .. " beacon_modeffects.speed " .. beacon_modeffects.speed .. " total_speed_effect " .. total_speed_effect)
 
+	consumption_crafting_speed = crafting_speed * ( 1 + consumption_speed_effect)
 	crafting_speed = crafting_speed * ( 1 + total_speed_effect)
 	-- how long does the item take to craft if no modules and crafting speed was 1?  It's in the recipe.energy!
-	crafting_time = get_entity_recipe(entity).energy
+	local recipe = get_entity_recipe(entity)
+	crafting_time = recipe.energy
 	
 	debug_print("crafting time " .. crafting_time .. " modeffects.speed " .. modeffects.speed .. " beacon_modeffects.speed " .. beacon_modeffects.speed )
 	
@@ -733,11 +768,12 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 	end
 	
 
+
 	-- for all the ingredients in the recipe, calculate the rate
 	-- they're consumed at.  Add to the inputs table.
-	for _, ingred in ipairs(get_entity_recipe(entity) .ingredients)
+	for _, ingred in ipairs(recipe .ingredients)
 	do
-		local amount = ingred.amount * crafting_speed / crafting_time
+		local amount = ingred.amount * consumption_crafting_speed / crafting_time
 		if inout_data.inputs[ingred.name] ~= nil
 		then
 			inout_data.inputs[ingred.name] = inout_data.inputs[ingred.name] + amount
@@ -769,6 +805,9 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 	do
 	    local chance
 		local amount
+		
+
+		
 		-- sometime in 0.17 factorio changed uranium recipe to use a probability value  * amount
 		-- rather than probability with a range of amount_min and amount_max
 		-- but some mods like Bob's Greenhouse still was using a range
@@ -806,6 +845,10 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 			catalyst_amount = prod.catalyst_amount
 		end
 		local productivity = modeffects.prod + beacon_modeffects.prod
+		if productivity < 0
+		then
+			productivity = 0
+		end
 		amount =  amount + (amount - catalyst_amount) * productivity
 		-- amount = amount * ( 1 + modeffects.prod + beacon_modeffects.prod) *  crafting_speed / crafting_time
 		-- amount = amount * ( 1 + productivity) *  crafting_speed / crafting_time
@@ -944,6 +987,8 @@ script.on_event(defines.events.on_player_selected_area,
 					if entity.prototype.module_inventory_size > 0					
 					then
 						beacon_modeffects = check_beacons(surface, entity)
+					else
+						debug_print(" zero module_inventory_size")
 					end
 					debug_print("bse = " .. beacon_modeffects.speed)
 					calc_assembler(entity, inout_data, beacon_modeffects)	
@@ -1071,11 +1116,11 @@ local function on_gui_click(event)
 		local inout_data = global.marc_inout_data_by_player[event.player_index]
 		if inout_data ~= nil
 		then
-			debug_print("on_gui_click looking for " .. event_name .. " in clickable values")
+			-- debug_print("on_gui_click looking for " .. event_name .. " in clickable values")
 			val = inout_data.clickable_values[event_name]
 			if val ~= nil
 			then
-				debug_print("on_gui_click found " .. event_name .. " in clickable values. val = " .. val)
+				-- debug_print("on_gui_click found " .. event_name .. " in clickable values. val = " .. val)
 				marcalc_clickable_value_clicked(player, val)
 				return
 			end
@@ -1094,13 +1139,12 @@ local function on_gui_click(event)
 		if root.marc_gui_top then
 		    if event_name == "marc_close_button"
 		    then
-				debug_print("destroy it " ..event_name)
 				destroy_marc_gui(player)
 				hide_calculator(player)
 			end
 		elseif event_name == "marc_close_button"
 		then
-			debug_print("old window") 
+
 			if player.gui.left.marc_gui_top then
 				player.gui.left.marc_gui_top.destroy()
 				hide_calculator(player)

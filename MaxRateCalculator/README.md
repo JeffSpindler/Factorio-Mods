@@ -89,4 +89,8 @@ Calculates rates for mining drills and pumpjacks (however, not sulfuric acid con
 
 ### 3.2.31 Factorio 0.18 support
 
-### 3.2.33 Use catalyst_amount for prod calcs.  Fixes issue with kovarex recipe
+### 3.2.32 Use catalyst_amount for prod calcs.  Fixes issue with kovarex recipe
+
+### 3.2.33 Fixed issue with small beacons not seen next to large assemblers (Krastorio 2)
+           Honor allowed_effects consumption flag or not
+           Don't allow productivity to drop below zero
