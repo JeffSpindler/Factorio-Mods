@@ -29,3 +29,5 @@ In future releases, I've been thinking about adding a mod settings capability to
 
 ### 0.2.7
 * Support 0.18
+
+### 0.2.8  Fixed issue with Factorio 0.18.22 and hotkeys prototypes
