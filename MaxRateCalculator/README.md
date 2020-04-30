@@ -94,3 +94,5 @@ Calculates rates for mining drills and pumpjacks (however, not sulfuric acid con
 ### 3.2.33 Fixed issue with small beacons not seen next to large assemblers (Krastorio 2)
            Honor allowed_effects consumption flag or not
            Don't allow productivity to drop below zero
+
+### 3.2.34 Fixed issue with Factorio 0.18.22 and hotkeys prototypes
