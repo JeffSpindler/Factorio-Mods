@@ -591,7 +591,7 @@ local function do_boxes_intersect(a, b)
     local b_right = b.right_bottom.x
     local b_top = b.left_top.y
     local b_bottom = b.right_bottom.y
-    return (a_left <= b_right and a_right >= b_left) and (a_top <= b_bottom and a_bottom >= b_top)
+    return (a_left < b_right and a_right > b_left) and (a_top < b_bottom and a_bottom > b_top)
 end
 -- ----------------------------------------------------------------
 
@@ -627,8 +627,10 @@ local function is_machine_in_range_of_beacon(entity, beacon)
 	--print_bounding_box("             beacon_box ", beacon_box)
 	-- debug_print(",,,,,,,,,,")
 
-	-- local ans = does_box_contain_box(beacon_box, machine_box)
+
 	local ans = do_boxes_intersect(beacon_box, machine_box)
+
+
 
 	return ans
 end
@@ -741,15 +743,19 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 	-- speed modules in beacons or in the plantation itself
 	-- Nonetheless, I'm excluding here the speed effect from consumption if that flag's not there
 	consumption_speed_effect = total_speed_effect
-	if  prodproto.allowed_effects ~= nil
-		and prodproto.allowed_effects["consumption"] ~= nil
-		and not prodproto.allowed_effects["consumption"]   
-	then
-		consumption_speed_effect = 0
-		debug_print("ignoring speed effect on consumption")
-	else 
-		debug_print("Using speed effect on consumption, its an allowed_effect")
-	end
+	-- if  prodproto.allowed_effects ~= nil
+	-- 	and prodproto.allowed_effects["consumption"] ~= nil
+	-- 	and not prodproto.allowed_effects["consumption"]   
+	-- then
+	-- 	consumption_speed_effect = modeffects.speed
+	-- 		if consumption_speed_effect < -0.80 -- no worse than 20%
+	-- 		then
+	-- 			consumption_speed_effect = -0.80
+	-- 	end
+	-- 	debug_print("ignoring beacon speed effect on consumption")
+	-- else 
+	-- 	debug_print("Using speed effect on consumption, its an allowed_effect")
+	-- end
 	
 	debug_print( "calc_assembler cspeed " .. crafting_speed .. " modspeed " .. modeffects.speed .. " beacon_modeffects.speed " .. beacon_modeffects.speed .. " total_speed_effect " .. total_speed_effect)
 
