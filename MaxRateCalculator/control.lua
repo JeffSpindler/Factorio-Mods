@@ -12,20 +12,23 @@ g_marc_units = {}
 
 
 -- .16 values for belts m/d = 3/40, 3/80, 1/40
+
 g_marc_units[1] = {name="marc-gui-persec", 			localized_name = {"marc-gui-persec"}, 			multiplier = 1, divisor = 1, infotype="time"}
 g_marc_units[2] = {name="marc-gui-permin", 			localized_name = {"marc-gui-permin"}, 			multiplier = 60, divisor = 1, infotype="time"}
-g_marc_units[3] = {name="marc-transport-belt", 		localized_name = {"marc-transport-belt"}, 		multiplier = 3, divisor = 45, infotype="transport"}
-g_marc_units[4] = {name="marc-fast-transport-belt", localized_name = {"marc-fast-transport-belt"}, 	multiplier = 3, divisor = 90, infotype="transport"}
-g_marc_units[5] = {name="marc-express-transport-belt", localized_name = {"marc-express-transport-belt"}, multiplier = 1, divisor = 45, infotype="transport"}
-g_marc_units[6] = {name="marc-burner-inserter", 	localized_name = {"marc-burner-inserter"}, 		multiplier = 3, divisor = 1.76, infotype="inserter"} -- divisor from https://wiki.factorio.com/Inserters
-g_marc_units[7] = {name="marc-basic-inserter", 		localized_name = {"marc-basic-inserter"}, 		multiplier = 3, divisor = 2.50, infotype="inserter"}
-g_marc_units[8] = {name="marc-long-inserter", 		localized_name = {"marc-long-inserter"}, 		multiplier = 3, divisor = 3.46, infotype="inserter"}
-g_marc_units[9] = {name="marc-fast-inserter", 		localized_name = {"marc-fast-inserter"}, 		multiplier = 1, divisor = 2.31, infotype="inserter"}
-g_marc_units[10] = {name="marc-stack-inserter", 	localized_name = {"marc-stack-inserter"}, 		multiplier = 12, divisor = 27.70, infotype="stack-inserter"}
-g_marc_units[11] = {name="marc-wagon-permin", 	localized_name = {"marc-wagon-permin"}, 		multiplier = 60, divisor =1 , infotype="wagon"}
-g_marc_units[12] = {name="marc-wagon-perhr", 	localized_name = {"marc-wagon-perhr"}, 		multiplier = 3600, divisor =1 , infotype="wagon"}
-g_marc_units_count = 12
+-- g_marc_units[3] = {name="marc-transport-belt", 		localized_name = {"marc-transport-belt"}, 		multiplier = 3, divisor = 45, infotype="transport"}
+-- g_marc_units[4] = {name="marc-fast-transport-belt", localized_name = {"marc-fast-transport-belt"}, 	multiplier = 3, divisor = 90, infotype="transport"}
+-- g_marc_units[5] = {name="marc-express-transport-belt", localized_name = {"marc-express-transport-belt"}, multiplier = 1, divisor = 45, infotype="transport"}
+g_marc_units[3] = {name="marc-burner-inserter", 	localized_name = {"marc-burner-inserter"}, 		multiplier = 3, divisor = 1.76, infotype="inserter"} -- divisor from https://wiki.factorio.com/Inserters
+g_marc_units[4] = {name="marc-basic-inserter", 		localized_name = {"marc-basic-inserter"}, 		multiplier = 3, divisor = 2.50, infotype="inserter"}
+g_marc_units[5] = {name="marc-long-inserter", 		localized_name = {"marc-long-inserter"}, 		multiplier = 3, divisor = 3.46, infotype="inserter"}
+g_marc_units[6] = {name="marc-fast-inserter", 		localized_name = {"marc-fast-inserter"}, 		multiplier = 1, divisor = 2.31, infotype="inserter"}
+g_marc_units[7] = {name="marc-stack-inserter", 	localized_name = {"marc-stack-inserter"}, 		multiplier = 12, divisor = 27.70, infotype="stack-inserter"}
+g_marc_units[8] = {name="marc-wagon-permin", 	localized_name = {"marc-wagon-permin"}, 		multiplier = 60, divisor =1 , infotype="wagon"}
+g_marc_units[9] = {name="marc-wagon-perhr", 	localized_name = {"marc-wagon-perhr"}, 		multiplier = 3600, divisor =1 , infotype="wagon"}
+
 g_marc_units_default = 2 -- per minutes is the default
+
+g_belts_added = false
 
 -- string formats so numbers are displayed in a consistent way
 local persec_format = "%16.3f"
@@ -52,9 +55,19 @@ function debug_print(str)
 	end
 end
 
+function __FUNC__() return debug.getinfo(2, 'n').name end
+
+function debug_log(f, str)
+	if global.marc_debug
+	then
+		game.print(f .. ": " .. str)
+	end
+end
+
+
 -- ----------------------------------------------------------------
 
-function printObj(obj, hierarchyLevel) 
+function printObj(obj) 
  
  for k,v in pairs(obj)
  do
@@ -116,14 +129,23 @@ end
 
 -- return the prototype
 local function get_proto(name)
-
+	
+	local p
+	local itype
 	if get_item_or_fluid(name) == "item"
 	then
-		return game.item_prototypes[name]
+		
+		p = game.item_prototypes[name]
+		itype = "item"
 	else
-		return game.fluid_prototypes[name]
+		itype = "fluid"
+		p = game.fluid_prototypes[name]
 	end
-
+	if(p == nil)
+	then
+		debug_print(__FUNC__() .. " could not find proto for " .. itype .. " " .. name)
+	end
+	return p
 end
 
 local function add_value_to_marcalc_clickable_list(inout_data, label_name, count)
@@ -180,6 +202,40 @@ end
 
 -- ----------------------------------------------------------------
 
+local function find_belts()
+
+
+	if g_belts_added
+	then
+		return
+	end
+	g_belts_added = true
+
+	local items_per_belt = 8
+	
+	for _,entity_proto in pairs(game.entity_prototypes)
+	do
+
+		if entity_proto.type == "transport-belt"
+		then
+			local p = entity_proto
+			debug_print(__FUNC__().. " found a belt " .. entity_proto.name)
+
+			local maxh = entity_proto.max_health
+					local speed = entity_proto.belt_speed
+			local denom = items_per_belt * speed * 60
+			local sz = #g_marc_units
+			debug_print (entity_proto.name .. " has speed " .. speed .. " denom is " .. denom .. " size " .. #g_marc_units)
+			
+			table.insert(g_marc_units,{name=p.name, 	localized_name = p.localised_name, 		multiplier = 1, divisor =denom , infotype="transport"})
+			
+
+		end
+	end				
+		
+
+end
+
 -- create the list of rate units the user can choose from
 local function build_units_dropdown_list()
 
@@ -193,6 +249,7 @@ local function build_units_dropdown_list()
 		listix = listix + 1
 	end
 	
+
 	
 	return item_list
 end
@@ -203,7 +260,7 @@ local function init_selected_units(player_index)
 
 	global.marc_selected_units = global.marc_selected_units or {}
 	global.marc_selected_units[player_index] = global.marc_selected_units[player_index] or g_marc_units_default
-	if global.marc_selected_units[player_index] == 0
+	if global.marc_selected_units[player_index] == 0 or global.marc_selected_units[player_index] > #g_marc_units
 	then
 		global.marc_selected_units[player_index] = g_marc_units_default
 	end
@@ -318,7 +375,8 @@ local function write_marc_gui(player, inout_data)
 	root.add({type = "frame", name = "marc_gui_top", direction = "vertical", caption={"marc-gui-top-label"}})
 	
 	local marc_gui_top = root.marc_gui_top
-	debug_print("marc location " .. root.marc_gui_top.location.x .. "," .. root.marc_gui_top.location.y)
+	debug_print(__FUNC__() .. ": marc location " .. root.marc_gui_top.location.x .. "," .. root.marc_gui_top.location.y)
+	debug_log(__FUNC__(), "hello")
 	if( global.marc_win_loc_x == nil )
 	then
 		global.marc_win_loc_x = 0
@@ -328,7 +386,6 @@ local function write_marc_gui(player, inout_data)
 		global.marc_win_loc_y = 172
 	end
 	root.marc_gui_top.location = { global.marc_win_loc_x, global.marc_win_loc_y }
-	debug_print("marc location " .. root.marc_gui_top.location.x .. "," .. root.marc_gui_top.location.y)
 	local marc_gui_top1 = marc_gui_top.add({type = "flow", name = "marc_gui_top1", direction = "horizontal"})
 	-- marc_gui_top1.add({type = "label", name="marc_top_label", caption={"marc-gui-top-label"}})
 	
@@ -342,8 +399,11 @@ local function write_marc_gui(player, inout_data)
 	
 	marc_gui_upper.add({type = "label", name="marc_upper_rate_label", caption={"marc-gui-rate-colon"}, tooltip={"marc-gui-tt-rate-select"}})
 	
+	debug_print("#g_marc_units " .. #g_marc_units)
+	
 	init_selected_units(player.index)
 	local ix = global.marc_selected_units[player.index]
+	debug_print("global.marc_selected_units[" .. player.index .. "] = " .. ix)
 	marc_gui_upper.add({type="drop-down", name="maxrate_units", items=build_units_dropdown_list(), selected_index=ix, tooltip={"marc-gui-tt-rate-select"}})
 	
 		-- can't figure out a nicer way to right justify the close button
@@ -741,25 +801,12 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 	-- in allowed effects.  I'm not seeing this in the prototype, nor in run-time tests, the fawogae plantations
 	-- do have consumption included in allowed_effects, and the plantation's water consumption is affected by
 	-- speed modules in beacons or in the plantation itself
-	-- Nonetheless, I'm excluding here the speed effect from consumption if that flag's not there
-	consumption_speed_effect = total_speed_effect
-	-- if  prodproto.allowed_effects ~= nil
-	-- 	and prodproto.allowed_effects["consumption"] ~= nil
-	-- 	and not prodproto.allowed_effects["consumption"]   
-	-- then
-	-- 	consumption_speed_effect = modeffects.speed
-	-- 		if consumption_speed_effect < -0.80 -- no worse than 20%
-	-- 		then
-	-- 			consumption_speed_effect = -0.80
-	-- 	end
-	-- 	debug_print("ignoring beacon speed effect on consumption")
-	-- else 
-	-- 	debug_print("Using speed effect on consumption, its an allowed_effect")
-	-- end
+	--
+	-- consumption applies to energy?  Pyanodon seems to treat it as item inputs
+ 
 	
 	debug_print( "calc_assembler cspeed " .. crafting_speed .. " modspeed " .. modeffects.speed .. " beacon_modeffects.speed " .. beacon_modeffects.speed .. " total_speed_effect " .. total_speed_effect)
 
-	consumption_crafting_speed = crafting_speed * ( 1 + consumption_speed_effect)
 	crafting_speed = crafting_speed * ( 1 + total_speed_effect)
 	-- how long does the item take to craft if no modules and crafting speed was 1?  It's in the recipe.energy!
 	local recipe = get_entity_recipe(entity)
@@ -779,7 +826,7 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 	-- they're consumed at.  Add to the inputs table.
 	for _, ingred in ipairs(recipe .ingredients)
 	do
-		local amount = ingred.amount * consumption_crafting_speed / crafting_time
+		local amount = ingred.amount * crafting_speed / crafting_time
 		if inout_data.inputs[ingred.name] ~= nil
 		then
 			inout_data.inputs[ingred.name] = inout_data.inputs[ingred.name] + amount
@@ -878,10 +925,11 @@ local function calc_mining(entity, inout_data, beacon_modeffects, drilling_bonus
 
 	local x = entity.position.x
 	local y = entity.position.y
-	debug_print("Found a drill")
+	debug_log(__FUNC__(),"Found a drill")
 	local prod = entity.mining_target
 	if prod == nil
 	then
+		debug_log(__FUNC__(),"nil mining_target " .. x .. "," .. y)
 		return
 	end
 	
@@ -891,22 +939,22 @@ local function calc_mining(entity, inout_data, beacon_modeffects, drilling_bonus
     printObj(prod)
 
     
-	debug_print("bse = " .. beacon_modeffects.speed)
+	debug_log(__FUNC__(),"bse = " .. beacon_modeffects.speed)
 	
-	debug_print("target is " .. prod.name .. " type " .. prod.type)
-	debug_print("target amount " .. prod.amount .. " normal amount " .. prodproto.normal_resource_amount)
-	debug_print("progress " .. entity.mining_progress .. " bonus " .. entity.bonus_mining_progress)
-	debug_print("speed " .. drillproto.mining_speed .. " power " .. drillproto.mining_power)
+	debug_log(__FUNC__(),"target is " .. prod.name .. " type " .. prod.type)
+	debug_log(__FUNC__(),"target amount " .. prod.amount .. " normal amount " .. prodproto.normal_resource_amount)
+	debug_log(__FUNC__(),"progress " .. entity.mining_progress .. " bonus " .. entity.bonus_mining_progress)
+	debug_log(__FUNC__(),"speed " .. drillproto.mining_speed )
 	-- get the machines base crafting speed, in cycles per second
 	local mining_speed = entity.prototype.mining_speed
-	local mining_power = entity.prototype.mining_power
-	--local is_infinite = prod.prototype.infinite
-	-- debug_print("is_infinite " .. is_infinite)
-	local mining_hardness = prodproto.mineable_properties.hardness
+	local mining_power = 1 -- entity.prototype.mining_power
+
+	
+	
 	local mining_time = prodproto.mineable_properties.mining_time
 	local result_type = get_item_or_fluid(prodproto.name)
 	
-	debug_print("result type is " .. result_type)
+	debug_log(__FUNC__(),"result type is " .. result_type)
 	
 	modeffects = { speed = 0, prod = 0 }
 	local effectivity = 1
@@ -918,36 +966,36 @@ local function calc_mining(entity, inout_data, beacon_modeffects, drilling_bonus
 	then
 		total_speed_effect = -0.80
 	end
-	debug_print( "calc_assembler cspeed " .. mining_speed .. " modspeed " .. modeffects.speed .. " beacon_modeffects.speed " .. beacon_modeffects.speed .. " total_speed_effect " .. total_speed_effect)
+	debug_log(__FUNC__(), "calc_assembler cspeed " .. mining_speed .. " modspeed " .. modeffects.speed .. " beacon_modeffects.speed " .. beacon_modeffects.speed .. " total_speed_effect " .. total_speed_effect)
 
 	mining_speed = mining_speed * ( 1 + total_speed_effect)
 
-    local amount =  (mining_power - mining_hardness) * mining_speed / mining_time
-    debug_print("amount =  (mining_power - mining_hardness) * mining_speed / mining_time")
-    debug_print(amount .. " =  (" .. mining_power.." - "..mining_hardness..") * ".. mining_speed.." / ".. mining_time)
+    local amount =  mining_speed / mining_time
+    
+    
   
     amount = amount* ( 1 + drilling_bonus + modeffects.prod + beacon_modeffects.prod)
-    debug_print("amount = amount* ( 1 +  drilling_bonus _modeffects.prod + beacon_modeffects.prod)")
-    debug_print(amount.." = amount  * ( 1 +" ..drilling_bonus.. "+" ..  modeffects.prod.. " +" ..  beacon_modeffects.prod..")")
+    debug_log(__FUNC__(),"amount = amount* ( 1 +  drilling_bonus _modeffects.prod + beacon_modeffects.prod)")
+    debug_log(__FUNC__(),amount.." = amount  * ( 1 +" ..drilling_bonus.. "+" ..  modeffects.prod.. " +" ..  beacon_modeffects.prod..")")
 	  
     if result_type == "fluid"
     then	
     	local mining_yield = (prod.amount / prodproto.normal_resource_amount ) *100
-		debug_print("yield is " .. math.floor(mining_yield))
+		debug_log(__FUNC__(),"yield is " .. math.floor(mining_yield))
 		mining_yield = math.min(mining_yield, 100)
-    	debug_print("ideal_amount = amount*  mining_yield / 10")    	
-        amount = amount*  mining_yield      
-        debug_print(amount .." = amount*  "..mining_yield.." / 10")
+	
+        amount = amount *  mining_yield / 10     
+        debug_log(__FUNC__(),amount .." = amount*  "..mining_yield )
  
     end
     
 	if inout_data.outputs[prod.name] ~= nil
 	then
-		debug_print("adding " .. amount .. " into " .. inout_data.outputs[prod.name])
+		debug_log(__FUNC__(),"adding " .. amount .. " into " .. inout_data.outputs[prod.name])
 		inout_data.outputs[prod.name] = inout_data.outputs[prod.name] + amount
 		inout_data.machines[prod.name] = inout_data.machines[prod.name] + 1
 	else
-	    debug_print("setting " .. prod.name .. " amount to " ..amount)
+	    debug_log(__FUNC__(),"setting " .. prod.name .. " amount to " ..amount)
 		inout_data.outputs[prod.name] = amount
 		inout_data.machines[prod.name] =  1
 	end
@@ -965,6 +1013,10 @@ script.on_event(defines.events.on_player_selected_area,
 		then
 			return
 		end
+		
+		find_belts()
+		
+		
 		global.marc_selected_unit_index = global.marc_selected_unit_index or {}
 		local player = game.players[event.player_index]
 		local surface = player.surface
@@ -1009,17 +1061,17 @@ script.on_event(defines.events.on_player_selected_area,
 			end
 			
 			-- 0.17 gives error "LuaEntityPrototype doesn't contain key mining_power."
-			-- if entity.type == "mining-drill"
-			-- then
-			-- 	local beacon_modeffects = { speed = 0, prod = 0 }
-			-- 	if entity.prototype.module_inventory_size > 0					
-			-- 	then
-			-- 		beacon_modeffects = check_beacons(surface, entity)
-			--	end
-			--	local drilling_bonus = player.force.mining_drill_productivity_bonus
-			--	debug_print("drilling_bonus " .. drilling_bonus)
-			--	calc_mining(entity, inout_data, beacon_modeffects, drilling_bonus)
-			-- end
+			if entity.type == "mining-drill"
+			then
+				local beacon_modeffects = { speed = 0, prod = 0 }
+			 	if entity.prototype.module_inventory_size > 0					
+			 	then
+			 		beacon_modeffects = check_beacons(surface, entity)
+				end
+				local drilling_bonus = player.force.mining_drill_productivity_bonus
+				debug_print("drilling_bonus " .. drilling_bonus)
+				calc_mining(entity, inout_data, beacon_modeffects, drilling_bonus)
+			 end
 		end
 		
 		if no_recipe_assemblers > 0 or no_recipe_smelters > 0
@@ -1167,6 +1219,8 @@ local function on_gui_selection(event)
 	local event_name = event.element.name
 	local player = game.players[event.player_index]
 	local root = get_gui_root(player)
+	
+
 
 		
 	if event_name == "maxrate_units"

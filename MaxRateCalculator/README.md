@@ -96,3 +96,7 @@ Calculates rates for mining drills and pumpjacks (however, not sulfuric acid con
            Don't allow productivity to drop below zero
 
 ### 3.2.34 Fixed issue with Factorio 0.18.22 and hotkeys prototypes
+
+### 3.3.36 Belts and their speeds pulled from game tables rather than being hardcoded, now supports mods with faster belts
+
+### 3.3.37 Mining and pumpjack calculations
