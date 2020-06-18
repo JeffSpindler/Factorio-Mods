@@ -102,10 +102,10 @@ end
 local function get_entity_recipe(entity)
 	if entity.type == "furnace"
 	then
-		return (entity.get_recipe() or entity.previous_recipe)				
-	elseif entity.type == "assembling-machine"				
-	then 
-		return entity.get_recipe() 
+		return (entity.get_recipe() or entity.previous_recipe)
+	elseif entity.type == "assembling-machine" or entity.type == "rocket-silo"
+	then
+		return entity.get_recipe()
 	else
 		return nil
 	end
@@ -1037,7 +1037,7 @@ script.on_event(defines.events.on_player_selected_area,
 				debug_print("No energy")
 			end
 			
-			if entity.type == "assembling-machine" or entity.type == "furnace"
+			if entity.type == "assembling-machine" or entity.type == "furnace" or entity.type == "rocket-silo"
 			then		
 				if get_entity_recipe(entity)  ~= nil
 				then
