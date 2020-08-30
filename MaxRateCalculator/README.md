@@ -99,4 +99,8 @@ Calculates rates for mining drills and pumpjacks (however, not sulfuric acid con
 
 ### 3.3.36 Belts and their speeds pulled from game tables rather than being hardcoded, now supports mods with faster belts
 
-### 3.3.37 Mining and pumpjack calculations
+### 3.4.37 Mining and pumpjack calculations
+
+### 3.4.38 Defensive coding against global debug not a lua table
+
+### 3.4.39 Mining/pumpjack calculation improvements

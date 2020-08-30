@@ -237,7 +237,7 @@ end
 -- ----------------------------------------------------------------
 
 local function process_func_key(player, key)
-	debug_print("process_func_key(" .. key .. ")")
+	debug_print("process_func_key(" .. key .. ") player ix " .. player.index)
 
 	if global.marcalc_context[player.index].current_func ~= ""
 	then
@@ -314,7 +314,7 @@ local function set_current_value_to_text(player, text)
 				global.marcalc_context[player.index].in_left_of_decimal = false
 			end
 		else
-			debug_print("got junk")
+			debug_print("got junk " .. text)
 		end
 end
 
@@ -389,6 +389,23 @@ end
 
 -- ----------------------------------------------------------------
 
+function marcalc_intercept_func_key(player, text)
+	local was_not_func_key = true	
+	local len = string.len(text)
+	local last = string.sub(text,len,len)
+	if last == "/"
+	then
+		process_func_key(player, "DIV")
+		was_not_func_key = false
+	elseif last == "="
+	then
+		process_func_key(player, "EQU")
+		was_not_func_key = false
+	end
+	
+	return was_not_func_key
+end
+
 function marcalc_on_gui_text_changed(event)
 	local player_index = event.player_index
 	local player = game.players[event.player_index]
@@ -399,17 +416,21 @@ function marcalc_on_gui_text_changed(event)
 		return
 	end
 	local text = root.marcalc.marcalc_display.text
-
 	
 	debug_print("marcalc_on_gui_text_changed element.name " .. element.name .. " text " .. text .. " caption " .. root.marcalc.marcalc_display.caption)
 	root.marcalc.marcalc_display.caption = text
+	
+	
 	if element.name == "marcalc_display"
 	then
-		set_current_value_to_text(player, text)
-		global.marcalc_context[player.index].in_data_entry = true
+			set_current_value_to_text(player, text)
+			global.marcalc_context[player.index].in_data_entry = true
+			
+			debug_print("call update_display, cv " .. global.marcalc_context[player.index].current_value .. " decimal_place " .. global.marcalc_context[player.index].decimal_place .. " in_lod " .. boolstr(global.marcalc_context[player.index].in_left_of_decimal))
+			update_display(player)
+
 	end
-	debug_print("call update_display, cv " .. global.marcalc_context[player.index].current_value .. " decimal_place " .. global.marcalc_context[player.index].decimal_place .. " in_lod " .. boolstr(global.marcalc_context[player.index].in_left_of_decimal))
-	update_display(player)
+
 end
 
 -- ----------------------------------------------------------------
