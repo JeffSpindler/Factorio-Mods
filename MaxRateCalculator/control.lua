@@ -1496,9 +1496,12 @@ local function on_hotkey_main(event)
 	-- put whatever is in the player's hand back in their inventory
 	-- and put our selection tool in their hand
 	local old_cursor_had_item = ""
-	if player.cursor_stack.valid_for_read
+	if player.cursor_stack ~= nil -- RusselRaZe reported crash accessing nil cursor_stack here when riding cargo rocket in space ex mod
 	then
-		old_cursor_had_item	= player.cursor_stack.name
+		if player.cursor_stack.valid_for_read
+		then
+			old_cursor_had_item	= player.cursor_stack.name
+		end
 	end
 	
 	player.clean_cursor()
