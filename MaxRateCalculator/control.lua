@@ -56,7 +56,7 @@ function debug_print(str)
 		game.print(str)
 	end
 end
-
+-- ----------------------------------------------------------------
 function __FUNC__() 
 	if type(debug) == "table"
 	then
@@ -65,14 +65,29 @@ function __FUNC__()
 		return "debug not table"
 	end
 end
-
+-- ----------------------------------------------------------------
 function debug_log(f, str)
 	if global.marc_debug
 	then
 		game.print(f .. ": " .. str)
 	end
 end
+-- ----------------------------------------------------------------
 
+function string:split( inSplitPattern, outResults )
+  if not outResults then
+    outResults = { }
+  end
+  local theStart = 1
+  local theSplitStart, theSplitEnd = string.find( self, inSplitPattern, theStart )
+  while theSplitStart do
+    table.insert( outResults, string.sub( self, theStart, theSplitStart-1 ) )
+    theStart = theSplitEnd + 1
+    theSplitStart, theSplitEnd = string.find( self, inSplitPattern, theStart )
+  end
+  table.insert( outResults, string.sub( self, theStart ) )
+  return outResults
+end
 
 -- ----------------------------------------------------------------
 
@@ -122,7 +137,7 @@ local function get_entity_recipe(entity)
 	if entity.type == "furnace"
 	then
 		return (entity.get_recipe() or entity.previous_recipe)				
-	elseif entity.type == "assembling-machine"				
+	elseif entity.type == "assembling-machine" or entity.type == "rocket-silo"			
 	then 
 		return entity.get_recipe() 
 	else
@@ -139,7 +154,15 @@ local function get_item_or_fluid(name)
 	item_or_fluid = "item"
 	if proto == nil
 	then
+		proto = game.fluid_prototypes[name]
+		if proto ~= nil
+		then
 		item_or_fluid = "fluid"
+		else
+		debug_log(__FUNC__(), name .. " neither item nor prototype nor fish nor fowl")
+
+		item_or_fluid = "item"
+		end
 	end
 	return item_or_fluid
 end
@@ -238,11 +261,12 @@ local function find_belts()
 	
 	for _,entity_proto in pairs(game.entity_prototypes)
 	do
-
+	debug_print(__FUNC__(), "looking" .. entity_proto.name)
+debug_print(__FUNC__(), "type " .. entity_proto.type)
 		if entity_proto.type == "transport-belt"
 		then
 			local p = entity_proto
-			debug_print(__FUNC__().. " found a belt " .. entity_proto.name)
+			debug_log(__FUNC__(), " found a belt " .. entity_proto.name)
 
 			local maxh = entity_proto.max_health
 					local speed = entity_proto.belt_speed
@@ -252,12 +276,44 @@ local function find_belts()
 			
 			table.insert(g_marc_units,{name=p.name, 	localized_name = p.localised_name, 		multiplier = 1, divisor =denom , infotype="transport"})
 			
+		else
+				debug_print(__FUNC__(), "keep looking" .. entity_proto.name)
+		end
+	end				
+		
+
+end
+
+-- ----------------------------------------------------------------
+
+local function find_inserters()
+	debug_log(__FUNC__(), "looking for inserters")
+	g_inserters_added = false
+
+	
+	for _,entity_proto in pairs(game.entity_prototypes)
+	do
+debug_print(__FUNC__(), "type " .. entity_proto.type)
+		if entity_proto.type == "inserter"
+		then
+			local p = entity_proto
+			debug_print(__FUNC__(), " found a inserter " .. entity_proto.name)
+
+-- 			local maxh = entity_proto.max_health
+-- 					local speed = entity_proto.inserter_speed
+-- 			local denom = items_per_inserter * speed * 60
+-- 			local sz = #g_marc_units
+-- 			debug_print (entity_proto.name .. " has speed " .. speed .. " denom is " .. denom .. " size " .. #g_marc_units)
+			
+			--table.insert(g_marc_units,{name=p.name, 	localized_name = p.localised_name, 		multiplier = 1, divisor =denom , infotype="transport"})
+			
 
 		end
 	end				
 		
 
 end
+-- ----------------------------------------------------------------
 
 -- create the list of rate units the user can choose from
 local function build_units_dropdown_list()
@@ -643,6 +699,7 @@ local function effect_allowed_for_machine(effectname, machine_proto)
 	then
 		return machine_proto.allowed_effects[effectname]
 	else
+		debug_log(__FUNC__(), "machine_proto.name "  .. machine_proto.name .. "has no allowed effects table")
 		return false;
 	end
 end
@@ -652,16 +709,20 @@ end
 
 -- calculate the speed and productivity effects of a single module
 local function calc_mod( modname, modeffects, modquant, effectivity, machine_proto )
+-- debug_print("calc_mod help " .. game.item_prototypes[modname])
+
+
+	local dummy = 0
 	protoeffects = game.item_prototypes[modname].module_effects
-	debug_print("mod is " .. modname .. " quantity " .. modquant)
+	debug_print("mod is " .. modname .. " quantity " .. modquant .. " num machine_proto " .. machine_proto.name)
 	for effectname,effectvals in pairs(protoeffects)
 	do
-		-- debug_print("...effectname is " .. effectname .. " modquant " .. modquant)
-		for _,bonamount in pairs(effectvals) -- first item in pair seems to be always "bonus"
+		debug_print("...effectname is " .. effectname .. " modquant " .. modquant)
+		for _,bonamount in pairs(effectvals) 
 		do
-			debug_log(__FUNC__(),"...effectname " .. effectname ..  ",  bonamount " .. bonamount)
 			local allowed = effect_allowed_for_machine(effectname, machine_proto)
-			debug_log(__FUNC__(),"...allowed " .. boolstr(allowed))
+			debug_log(__FUNC__(),"...effectname " .. effectname ..  ",  bonamount " .. bonamount .. "...allowed " .. boolstr(allowed))
+			
 			if allowed
 			then
 				if effectname == "speed"
@@ -892,6 +953,46 @@ function energy_usage(inout_data, prodproto, beacon_modeffects, mod_effects)
 	debug_log(__FUNC__(), "total min " .. inout_data.min_consumption .. " max " .. inout_data.max_consumption)
 
 end
+
+-- ----------------------------------------------------------------
+
+local function record_input(inout_data, name, amount)
+
+		if inout_data.inputs[name] ~= nil
+		then
+
+			inout_data.inputs[name] = inout_data.inputs[name] + amount
+
+		else
+			inout_data.inputs[name] = amount
+
+		end
+		if inout_data.machines_fed[name] ~= nil
+		then
+			inout_data.machines_fed[name] = inout_data.machines_fed[name] + 1
+		else
+			inout_data.machines_fed[name] = 1
+		end
+end
+
+-- ----------------------------------------------------------------
+
+local function record_output(inout_data, name, amount)
+
+			if inout_data.outputs[name] ~= nil
+			then
+				inout_data.outputs[name] = inout_data.outputs[name] + amount
+			else
+				inout_data.outputs[name] = amount
+			end
+			if inout_data.machines[name] ~= nil
+			then
+				inout_data.machines[name] = inout_data.machines[name] + 1
+			else
+				inout_data.machines[name] =  1
+			end
+end
+
 -- ----------------------------------------------------------------
 
 -- for an individual assembler, calculate the rates all the inputs are used at and the outputs are produced at, per second
@@ -935,13 +1036,16 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 	debug_log(__FUNC__(), "cspeed " .. crafting_speed .. " modspeed " .. modeffects.speed .. " beacon_modeffects.speed " .. beacon_modeffects.speed .. " total_speed_effect " .. total_speed_effect)
 
 	crafting_speed = crafting_speed * ( 1 + total_speed_effect)
+		
+	
 	-- how long does the item take to craft if no modules and crafting speed was 1?  It's in the recipe.energy!
 	local recipe = get_entity_recipe(entity)
 	if get_entity_recipe(entity)  ~= nil
 	then
 		crafting_time = recipe.energy
-
-		debug_log(__FUNC__(),"crafting time " .. crafting_time .. " modeffects.speed " .. modeffects.speed .. " beacon_modeffects.speed " .. beacon_modeffects.speed )
+		local ideal_rate = crafting_speed / crafting_time
+		local game_limited_rate  = math.min(ideal_rate, 60)
+		 debug_log(__FUNC__(),"crafting time " .. crafting_time .. " modeffects.speed " .. modeffects.speed .. " beacon_modeffects.speed " .. beacon_modeffects.speed .. " ideal rate " .. ideal_rate .. " game limited rate " .. game_limited_rate)
 
 		if(crafting_time == 0)
 		then
@@ -953,22 +1057,11 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 		-- they're consumed at.  Add to the inputs table.
 		for _, ingred in ipairs(recipe .ingredients)
 		do
-			local amount = ingred.amount * crafting_speed / crafting_time
-			if inout_data.inputs[ingred.name] ~= nil
-			then
-				
-				inout_data.inputs[ingred.name] = inout_data.inputs[ingred.name] + amount
+			
+			local amount = ingred.amount * game_limited_rate
+			
+			record_input(inout_data, ingred.name, amount)
 
-			else
-				inout_data.inputs[ingred.name] = amount
-				
-			end
-			if inout_data.machines_fed[ingred.name] ~= nil
-			then
-				inout_data.machines_fed[ingred.name] = inout_data.machines_fed[ingred.name] + 1
-			else
-				inout_data.machines_fed[ingred.name] = 1
-			end
 		end
 
 		--[[ 
@@ -998,7 +1091,7 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 			-- but some mods like Bob's Greenhouse still was using a range
 			if prod.probability ~= nil
 			then 
-				debug_log(__FUNC__(),"probability is " .. prod.probability)
+				-- debug_log(__FUNC__(),"probability is " .. prod.probability)
 				chance = prod.probability
 				if prod.amount_min ~= nil
 				then
@@ -1007,12 +1100,12 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 				   amount = prod.amount * chance
 				end
 			else
-				debug_log(__FUNC__(),"probability is nil")
+				-- debug_log(__FUNC__(),"probability is nil")
 				chance = 1
 
 				if prod.amount ~= nil
 				then
-					debug_log(__FUNC__(),"prod amount, modeffects.prod " .. prod.name .. " " .. prod.amount .. "," .. modeffects.prod )
+					-- debug_log(__FUNC__(),"prod amount, modeffects.prod " .. prod.name .. " " .. prod.amount .. "," .. modeffects.prod )
 					amount = prod.amount 
 				else
 					amount =  (prod.amount_min + prod.amount_max) / 2
@@ -1020,7 +1113,7 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 			end	   
 
 			-- gotta handle super beacons - they can affect prod too
-			debug_log(__FUNC__(), prod.name .. " amount " .. amount .. " modeffects " .. ( 1 + modeffects.prod) .. " cspeed " .. crafting_speed .. " crafting_time" .. crafting_time)
+			-- debug_log(__FUNC__(), prod.name .. " amount " .. amount .. " modeffects " .. ( 1 + modeffects.prod) .. " cspeed " .. crafting_speed .. " crafting_time" .. crafting_time)
 			local catalyst_amount = 0
 			if prod.catalyst_amount ~= nil
 			then
@@ -1031,22 +1124,12 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 			then
 				productivity = 0
 			end
-			amount =  amount + (amount - catalyst_amount) * productivity
-			-- amount = amount * ( 1 + modeffects.prod + beacon_modeffects.prod) *  crafting_speed / crafting_time
-			-- amount = amount * ( 1 + productivity) *  crafting_speed / crafting_time
-			amount = amount * crafting_speed / crafting_time
-			if inout_data.outputs[prod.name] ~= nil
-			then
-				inout_data.outputs[prod.name] = inout_data.outputs[prod.name] + amount
-			else
-				inout_data.outputs[prod.name] = amount
-			end
-			if inout_data.machines[prod.name] ~= nil
-			then
-				inout_data.machines[prod.name] = inout_data.machines[prod.name] + 1
-			else
-				inout_data.machines[prod.name] =  1
-			end
+			
+			-- speed bonus applies fully to productivity bonus, but is limited to no more that 60 for non-prod boosted output
+			amount =  amount *  game_limited_rate + (amount - catalyst_amount) * productivity * ideal_rate
+			
+			record_output(inout_data, prod.name, amount)
+
 		end
 	end
 	
@@ -1066,38 +1149,39 @@ local function calc_mining(inout_data, surface, player, entity)
 
 	local x = entity.position.x
 	local y = entity.position.y
-	debug_log(__FUNC__(),"Found a drill")
+	--debug_log(__FUNC__(),"Found a drill")
 	local prod = entity.mining_target
 	if prod == nil
 	then
-		debug_log(__FUNC__(),"nil mining_target " .. x .. "," .. y)
+		--debug_log(__FUNC__(),"nil mining_target " .. x .. "," .. y)
 		return
 	end
 	
 	local prodproto = entity.mining_target.prototype
 	local drillproto = entity.prototype
 
-	debug_log(__FUNC__(),"bse = " .. beacon_modeffects.speed)
+	 debug_log(__FUNC__(),"bse = " .. beacon_modeffects.speed)
 	
-	debug_log(__FUNC__(),"target is " .. prod.name .. " type " .. prod.type)
-	debug_log(__FUNC__(),"target amount " .. prod.amount .. " normal amount " .. prodproto.normal_resource_amount)
-	debug_log(__FUNC__(),"progress " .. entity.mining_progress .. " bonus " .. entity.bonus_mining_progress)
-	debug_log(__FUNC__(),"speed " .. drillproto.mining_speed )
+	 debug_log(__FUNC__(),"target is " .. prod.name .. " type " .. prod.type)
+	 debug_log(__FUNC__(),"target amount " .. prod.amount .. " normal amount " .. prodproto.normal_resource_amount)
+	 debug_log(__FUNC__(),"progress " .. entity.mining_progress .. " bonus " .. entity.bonus_mining_progress)
+	 debug_log(__FUNC__(),"speed " .. drillproto.mining_speed )
+	
 	-- get the machines base crafting speed, in cycles per second
 	local mining_speed = entity.prototype.mining_speed
 	local mining_power = 1 -- entity.prototype.mining_power
-
-	
 	
 	local mining_time = prodproto.mineable_properties.mining_time
-	local result_type = get_item_or_fluid(prodproto.name)
 	
-	debug_log(__FUNC__(),"result type is " .. result_type .. " number of mineable products " .. #prodproto.mineable_properties.products)
+
+	
+	 debug_log(__FUNC__(),prodproto.name ..  " number of mineable products " .. #prodproto.mineable_properties.products)
 	
 	modeffects = init_modeffects()
 	local effectivity = 1
-	modeffects = calc_mods(entity, modeffects, effectivity, prodproto)
+	modeffects = calc_mods(entity, modeffects, effectivity, entity.prototype)
 	energy_usage(inout_data, drillproto, beacon_modeffects, nil)
+	
 	-- adjust crafting speed based on modules and beacons
 	local total_speed_effect = modeffects.speed + beacon_modeffects.speed
 	if total_speed_effect < -0.80 -- no worse than 20%
@@ -1109,11 +1193,9 @@ local function calc_mining(inout_data, surface, player, entity)
 	mining_speed = mining_speed * ( 1 + total_speed_effect)
 
     local amount =  mining_speed / mining_time
-    
-    
   	local oldamount = amount
     
-    amount = amount* ( 1 + drilling_bonus + modeffects.prod + beacon_modeffects.prod)
+    amount = amount * ( 1 + drilling_bonus + modeffects.prod + beacon_modeffects.prod)
     
     debug_log(__FUNC__(),"amount = amount* ( 1 +  drilling_bonus _modeffects.prod + beacon_modeffects.prod)")
     debug_log(__FUNC__(),amount.." = " ..  oldamount .. " * ( 1 +" ..drilling_bonus.. "+" ..  modeffects.prod.. " +" ..  beacon_modeffects.prod..")")
@@ -1121,39 +1203,27 @@ local function calc_mining(inout_data, surface, player, entity)
 	for _,mineable_product in pairs(prodproto.mineable_properties.products)
 	do
 		local product_name = mineable_product.name
-		debug_log(__FUNC__(),"mineable_product.name" .. mineable_product.name)
+		local result_type = get_item_or_fluid(product_name)
+		-- debug_log(__FUNC__(),"mineable_product.name" .. mineable_product.name)
 		
 		local required_fluid = prodproto.mineable_properties.required_fluid
 		if required_fluid ~= nil
 		then
-			debug_log(__FUNC__(),"prodproto.mineable_properties.required_fluid " .. prodproto.mineable_properties.required_fluid)
-			debug_log(__FUNC__(),"prodproto.mineable_properties.fluid_amount " .. prodproto.mineable_properties.fluid_amount)
 			local fluid_amount = prodproto.mineable_properties.fluid_amount * mining_speed / mining_time
 			fluid_amount = fluid_amount / 10 -- prodproto.mineable_properties.fluid_amount is 10x too high
-			if inout_data.inputs[required_fluid] == nil
-			then
-				inout_data.inputs[required_fluid] = fluid_amount 
-			else
-				inout_data.inputs[required_fluid] = inout_data.inputs[required_fluid] + fluid_amount
-			end
-			if inout_data.machines_fed[required_fluid] ~= nil
-			then
-				inout_data.machines_fed[required_fluid] = inout_data.machines_fed[required_fluid] + 1
-			else
-				inout_data.machines_fed[required_fluid] = 1
-			end
+			record_input(inout_data, required_fluid, fluid_amount)
 		end
 
 		if result_type == "fluid"
 		then
-			debug_log(__FUNC__(), "prod.amount is " .. prod.amount)
+			-- debug_log(__FUNC__(), "prod.amount is " .. prod.amount)
 			-- 
 			local mineable_props = prodproto.mineable_properties.result
 
 			local mineable_amt
 			if mineable_product.amount_min ~= nil
 			then
-				debug_log(__FUNC__(), " producst min   is " .. mineable_product.amount_min)
+				-- debug_log(__FUNC__(), " producst min   is " .. mineable_product.amount_min)
 				mineable_amt = (mineable_product.amount_min + mineable_product.amount_max) / 2
 			else
 				mineable_amt = mineable_product.amount
@@ -1168,21 +1238,8 @@ local function calc_mining(inout_data, surface, player, entity)
 
 		end
 		
-		debug_log(__FUNC__(), "product_name is now " .. product_name)
-		if inout_data.outputs[product_name] ~= nil
-		then
-			debug_log(__FUNC__(),"adding " .. amount .. " into " .. inout_data.outputs[product_name])
-			inout_data.outputs[product_name] = inout_data.outputs[product_name] + amount
-		else
-			debug_log(__FUNC__(),"setting " .. product_name .. " amount to " ..amount)
-			inout_data.outputs[product_name] = amount
-		end
-		if inout_data.machines[product_name] ~= nil
-		then
-			inout_data.machines[product_name] = inout_data.machines[product_name] + 1
-		else
-			inout_data.machines[product_name] =  1
-		end
+		debug_log(__FUNC__(), "product_name is now " .. product_name .. " amount " .. amount)
+		record_output(inout_data, product_name, amount)
 	end
 
 end
@@ -1236,6 +1293,79 @@ end
 
 -- ----------------------------------------------------------------
 
+local function calc_boiler(inout_data, surface, entity)
+	
+	debug_log(__FUNC__(), "boiler is " .. entity.name)
+	
+	-- prodproto.fluidbox_prototypes array has .filter.name - either steam or water
+	-- but since consumption/production rates not exposed by factorio (as far as I know)
+	-- have to use hardcoded numbers
+-- 	local prodproto = game.entity_prototypes[entity.name]	
+-- 	local helpText = prodproto.help()
+-- 	local helpTable = helpText:split("\n")
+-- 	debug_log(__FUNC__(), "help # " .. #helpTable)
+-- 	for hix = 1, #helpTable do
+-- 		if helpTable[hix] ~= nil
+-- 		then
+-- 			if string.find(helpTable[hix], "fluid")
+-- 			then
+-- 				debug_log(__FUNC__(),helpTable[hix])
+-- 			end
+-- 		end
+-- 	end
+	
+	
+	local consumptionRate
+	local productionRate
+	if entity.name == "boiler"
+	then
+		consumptionRate = 20
+		productionRate = 20
+	elseif entity.name == "heat-exchanger"
+	then
+		consumptionRate = 20
+		productionRate = 20
+	else
+		game.print("Unknown boiler " .. entity.name .. ". Fluid calculations may not be accurate")
+		return
+	end
+	
+	record_input(inout_data, "water", consumptionRate)
+	record_output(inout_data, "steam", consumptionRate)
+end	
+
+-- ----------------------------------------------------------------
+
+local function calc_generator(inout_data, surface, entity)
+
+
+ 	debug_log(__FUNC__(), "generator is " .. entity.name)
+ 	
+ 	
+ 	
+ 	local genProto = game.entity_prototypes[entity.name]
+ 	debug_log(__FUNC__(), "generator fluid usage is " .. genProto.fluid_usage_per_tick)
+ 	local consumptionRate = genProto.fluid_usage_per_tick * 60
+ 	local fluid_name = "some fluid"
+ 	
+ 	if #genProto.fluidbox_prototypes == 1
+ 	then
+ 		if genProto.fluidbox_prototypes[1].filter ~= nil
+ 		then
+ 			
+ 		fluid_name = genProto.fluidbox_prototypes[1].filter.name
+ 		end
+ 	end
+ 	debug_log(__FUNC__(), "generator uses " .. fluid_name)
+	if fluid_name ~= "some fluid"
+	then
+		record_input(inout_data, fluid_name, consumptionRate)
+	end
+end	
+
+
+-- ----------------------------------------------------------------
+
 -- player has selected some machines with our tool
 script.on_event(defines.events.on_player_selected_area,
 	function(event)
@@ -1248,6 +1378,7 @@ script.on_event(defines.events.on_player_selected_area,
 		end
 		
 		find_belts()
+		find_inserters()
 		
 		
 		global.marc_selected_unit_index = global.marc_selected_unit_index or {}
@@ -1269,9 +1400,9 @@ script.on_event(defines.events.on_player_selected_area,
 		local count = 0
 		for _, entity in ipairs(event.entities)
 		do
-			debug_log(function_name,"Found entity " .. entity.name .." count " .. count )
+			debug_log(function_name,"Found entity " .. entity.name .. " type " .. entity.type .. " count " .. count )
 			count = count + 1
-			if entity.type == "assembling-machine"
+			if entity.type == "assembling-machine"  or entity.type == "rocket-silo"		
 			then		
 				no_recipe_assemblers = no_recipe_assemblers + calc_production(inout_data, surface, entity)
 			elseif entity.type == "furnace"
@@ -1292,8 +1423,24 @@ script.on_event(defines.events.on_player_selected_area,
 			then
 				calc_inserter( inout_data, surface, entity)
 			-- science, rocket launch pads, radars, lasers
+			elseif entity.type == "boiler"
+			then
+				calc_boiler( inout_data, surface, entity)
+			elseif entity.type == "generator"
+			then
+				calc_generator( inout_data, surface, entity)
 			else
+				local prodproto = game.entity_prototypes[entity.name]
 				debug_log(function_name,"TODO maybe: " .. entity.type)
+				if prodproto.fixed_recipe ~= nil
+				then
+					debug_log(function_name,"TODO fixed recipe " .. prodproto.fixed_recipe)
+				end
+				
+				if prodproto.fluid_usage_per_tick ~= nil
+				then
+					debug_log(function_name,"TODO fupt " .. prodproto.fluid_usage_per_tick)
+				end
 			end
 		end
 		
