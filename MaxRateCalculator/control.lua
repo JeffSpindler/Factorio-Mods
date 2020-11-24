@@ -1504,7 +1504,7 @@ local function on_hotkey_main(event)
 		end
 	end
 	
-	player.clean_cursor()
+	player.clear_cursor()
 	if player.cursor_stack ~= nil -- muppet9010 reported crash accessing nil cursor_stack here when player died
 	then
 		if old_cursor_had_item ~= "max-rate-calculator" -- if already in hand, just clear it and get out
