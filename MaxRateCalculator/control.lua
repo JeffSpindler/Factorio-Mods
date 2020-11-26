@@ -1293,6 +1293,61 @@ end
 
 -- ----------------------------------------------------------------
 
+local function dump_help(prodproto, filter)
+ 	local helpText = prodproto.help()
+ 	local helpTable = helpText:split("\n")
+ 	-- debug_log(__FUNC__(), "help for " ..prodproto.name)
+ 	for hix = 1, #helpTable do
+ 		if helpTable[hix] ~= nil
+ 		then
+			if string.find(helpTable[hix], filter)
+ 			then
+ 				debug_log(__FUNC__(),helpTable[hix])
+ 			end
+ 		end
+ 	end
+end
+
+-- cribbed from helmod
+local function getPowerExtract(temperature, heat_capac)
+
+    if temperature == nil then
+      temperature = 165
+    end
+    if temperature < 15 then
+      temperature = 25
+    end
+    if heat_capacity == nil or heat_capacity == 0 then
+      heat_capacity = 200
+    end
+    return (temperature-15)*heat_capacity
+
+end
+
+-- cribbed from helmod
+local function getFluidProduction(proto)
+      local effectivity = proto.effectivity or 1
+      debug_log(__FUNC__(), "effectivity is " .. effectivity)
+      if(proto.effectivity == nil)
+      then
+      	debug_log(__FUNC__(), "proto.effectivity is nil")
+      end
+      local fluid_filter = "water"
+      local fluid_prototype = game.fluid_prototypes[fluid_filter]	
+      
+      local heat_capacity = fluid_prototype.heat_capacity
+      local target_temperature = proto.target_temperature
+      debug_log(__FUNC__(),"target temp is " .. target_temperature .. " heat cap is " .. heat_capacity)
+      local power_extract = getPowerExtract(target_temperature, heat_capacity)
+      local energy_consumption = proto.max_energy_usage
+      debug_log(__FUNC__(), "energy_consumption " .. energy_consumption .. "/" .. power_extract .. " = " .. (energy_consumption / power_extract)) 
+      return energy_consumption / (effectivity * power_extract) 
+	-- number is too high for kras by a factor of 2.5, is correct for vanilla
+	-- effectivity is nil
+	-- energy_consumption must be wrong for Kras
+end
+
+
 local function calc_boiler(inout_data, surface, entity)
 	
 	debug_log(__FUNC__(), "boiler is " .. entity.name)
@@ -1300,7 +1355,23 @@ local function calc_boiler(inout_data, surface, entity)
 	-- prodproto.fluidbox_prototypes array has .filter.name - either steam or water
 	-- but since consumption/production rates not exposed by factorio (as far as I know)
 	-- have to use hardcoded numbers
--- 	local prodproto = game.entity_prototypes[entity.name]	
+	local prodproto = game.entity_prototypes[entity.name]	
+	debug_log(__FUNC__(), "type is " .. prodproto.type)
+	debug_log(__FUNC__(), "max is " .. prodproto.max_energy_usage)
+	-- debug_log(__FUNC__(), "fluid_usage_per_tick is " .. prodproto.fluid_usage_per_tick)
+	local wontwork = prodproto.emissions_per_second
+	debug_log(__FUNC__(), "wontwork is " .. wontwork)
+	local energySource = prodproto.heat_energy_source_prototype
+	if energySource == nil
+	then
+		debug_log(__FUNC__(), "energySource is nil")
+	else
+		debug_log(__FUNC__(), "energySource is not nil")
+			dump_help(energySource, "eff")
+			debug_log(__FUNC__(), "emissions is " .. energySource.emissions)
+	end
+	-- local emissions_per_minute = energySource.emissions_per_minute
+	-- debug_log(__FUNC__(),"emissions per minute  " .. emissions_per_minute)
 -- 	local helpText = prodproto.help()
 -- 	local helpTable = helpText:split("\n")
 -- 	debug_log(__FUNC__(), "help # " .. #helpTable)
@@ -1311,27 +1382,39 @@ local function calc_boiler(inout_data, surface, entity)
 -- 			then
 -- 				debug_log(__FUNC__(),helpTable[hix])
 -- 			end
+-- 			 			if string.find(helpTable[hix], "emiss")
+--			 			then
+--			 				debug_log(__FUNC__(),helpTable[hix])
+-- 			end
 -- 		end
 -- 	end
+	dump_help(prodproto, "consumption")
+	dump_help(prodproto, "energy")
+
+	--debug_log(__FUNC__(), "prodproto.energy_consumption " .. (prodproto.energy_consumption or -99))
+    local helsanswer = getFluidProduction(prodproto)	
+	debug_log(__FUNC__(), "helsanswer is " .. helsanswer)
 	
+		
+ -- local consumptionRate
+local productionRate
+-- if entity.name == "boiler"
+-- then
+-- 	consumptionRate = 20
+-- 	productionRate = 20
+-- elseif entity.name == "heat-exchanger"
+-- then
+-- 	consumptionRate = 20
+-- 	productionRate = 20
+-- else
+-- 	game.print("Unknown boiler " .. entity.name .. ". Fluid calculations may not be accurate")
+-- 	return
+-- end
 	
-	local consumptionRate
-	local productionRate
-	if entity.name == "boiler"
-	then
-		consumptionRate = 20
-		productionRate = 20
-	elseif entity.name == "heat-exchanger"
-	then
-		consumptionRate = 20
-		productionRate = 20
-	else
-		game.print("Unknown boiler " .. entity.name .. ". Fluid calculations may not be accurate")
-		return
-	end
+	productionRate = helsanswer * 60
 	
-	record_input(inout_data, "water", consumptionRate)
-	record_output(inout_data, "steam", consumptionRate)
+	record_input(inout_data, "water", productionRate)
+	record_output(inout_data, "steam", productionRate)
 end	
 
 -- ----------------------------------------------------------------
@@ -1502,9 +1585,9 @@ local function on_hotkey_main(event)
 		then
 			old_cursor_had_item	= player.cursor_stack.name
 		end
-	end
+	end 
 	
-	player.clean_cursor()
+	player.clear_cursor()
 	if player.cursor_stack ~= nil -- muppet9010 reported crash accessing nil cursor_stack here when player died
 	then
 		if old_cursor_had_item ~= "max-rate-calculator" -- if already in hand, just clear it and get out
