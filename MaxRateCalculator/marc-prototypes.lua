@@ -16,8 +16,9 @@ data:extend(
 		type = "selection-tool",
 		name = "max-rate-calculator",
 		show_in_library = false,
-		icon = "__MaxRateCalculator__/graphics/max-rate-calculator32.png",
-		flags = {"hidden", "only-in-cursor"},
+		icon = "__MaxRateCalculator__/graphics/calculator.png",
+		icon_size = 64,
+		flags = {"hidden", "only-in-cursor", "spawnable"},
 		subgroup = "tool",
 		order = "c[automated-construction]-b[tree-deconstructor]",
 		stack_size = 1,
@@ -28,25 +29,32 @@ data:extend(
 		alt_selection_mode = {"blueprint", "buildable-type"},
 		selection_cursor_box_type = "entity",
 		alt_selection_cursor_box_type = "not-allowed",
-	}
-
-	,
+	},
 	{
 		type = "shortcut",
 		name = "max-rate-shortcut",
 		order = "b[blueprints]-h[max-rate-calc]",
-		action = "lua",
-		toggleable = false,
+		associated_control_input = "marc_hotkey",
+		action = "spawn-item",
+		item_to_spawn = "max-rate-calculator",
+		style = "blue",
 		icon =
 		{
-		  filename = "__MaxRateCalculator__/graphics/max-rate-calculator64.png",
-		  priority = "extra-high-no-scale",
-		  size = 64,
-		  scale = 1,
-		  flags = {"icon"}
-		}
-    }
-	,
+			filename = "__MaxRateCalculator__/graphics/calculator-x32-white.png",
+			priority = "extra-high-no-scale",
+			size = 32,
+			scale = 0.5,
+			flags = {"gui-icon"}
+		},
+		small_icon =
+		{
+			filename = "__MaxRateCalculator__/graphics/calculator-x24-white.png",
+			priority = "extra-high-no-scale",
+			size = 24,
+			scale = 0.5,
+			flags = {"gui-icon"}
+		},
+  },
 	{
 		type = "shortcut",
 		name = "marc_calc_4func",
@@ -55,13 +63,19 @@ data:extend(
 		toggleable = true,
 		icon =
 		{
-		  filename = "__MaxRateCalculator__/graphics/calculator.png",
-		  priority = "extra-high-no-scale",
-		  size = 64,
-		  scale = 1,
-		  flags = {"icon"}
+			filename = "__MaxRateCalculator__/graphics/calculator-x32.png",
+			priority = "extra-high-no-scale",
+			size = 32,
+			scale = 0.5,
+			flags = {"gui-icon"}
+		},
+		small_icon =
+		{
+			filename = "__MaxRateCalculator__/graphics/calculator-x24.png",
+			priority = "extra-high-no-scale",
+			size = 24,
+			scale = 0.5,
+			flags = {"gui-icon"}
 		}
-    }
-
+  }
 })
-
