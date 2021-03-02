@@ -1576,43 +1576,19 @@ local function on_hotkey_main(event)
 		global.marc_hint = 1
 	end
 
-	-- put whatever is in the player's hand back in their inventory
-	-- and put our selection tool in their hand
-	local old_cursor_had_item = ""
-	if player.cursor_stack ~= nil -- RusselRaZe reported crash accessing nil cursor_stack here when riding cargo rocket in space ex mod
-	then
-		if player.cursor_stack.valid_for_read
-		then
-			old_cursor_had_item	= player.cursor_stack.name
-		end
-	end 
-	
-	player.clear_cursor()
-	if player.cursor_stack ~= nil -- muppet9010 reported crash accessing nil cursor_stack here when player died
-	then
-		if old_cursor_had_item ~= "max-rate-calculator" -- if already in hand, just clear it and get out
-		then
-			local cursor_stack = player.cursor_stack
-
-			cursor_stack.clear()
-			cursor_stack.set_stack({name="max-rate-calculator", type="selection-tool", count = 1})
-		end
+	-- put our selection tool in player hand
+	if player.clear_cursor() and player.cursor_stack.valid_for_read then
+		player.cursor_stack.set_stack({name = "max-rate-calculator"})
 	end
-
-
 end
 
 -- ----------------------------------------------------------------
 
 local function max_rate_shortcut(event)
 	debug_print("Max Rate Shortcut")
-	if event.prototype_name == "max-rate-shortcut"
-	then
-		on_hotkey_main(event)
-    elseif event.prototype_name == "marc_calc_4func"
-    then
-    	local player = game.players[event.player_index]
-    	toggle_calculator(player)
+	if event.prototype_name == "marc_calc_4func" then
+  	local player = game.players[event.player_index]
+  	toggle_calculator(player)
 	end
 end
 
