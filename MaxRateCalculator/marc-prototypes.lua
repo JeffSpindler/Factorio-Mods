@@ -17,7 +17,7 @@ data:extend(
 		name = "max-rate-calculator",
 		show_in_library = false,
 		icon = "__MaxRateCalculator__/graphics/max-rate-calculator32.png",
-		flags = {"hidden", "only-in-cursor"},
+		flags = { "only-in-cursor"},
 		subgroup = "tool",
 		order = "c[automated-construction]-b[tree-deconstructor]",
 		stack_size = 1,
@@ -31,36 +31,36 @@ data:extend(
 	}
 
 	,
-	{
-		type = "shortcut",
-		name = "max-rate-shortcut",
-		order = "b[blueprints]-h[max-rate-calc]",
-		action = "lua",
-		toggleable = false,
-		icon =
-		{
-		  filename = "__MaxRateCalculator__/graphics/max-rate-calculator64.png",
-		  priority = "extra-high-no-scale",
-		  size = 64,
-		  scale = 1,
-		  flags = {"icon"}
-		}
-    }
-	,
-	{
-		type = "shortcut",
-		name = "marc_calc_4func",
-		order = "b[blueprints]-h[max-rate-calc]",
-		action = "lua",
-		toggleable = true,
-		icon =
-		{
-		  filename = "__MaxRateCalculator__/graphics/calculator.png",
-		  priority = "extra-high-no-scale",
-		  size = 64,
-		  scale = 1,
-		  flags = {"icon"}
-		}
+	select = {
+	      border_color = { r = 1, g = 1 },
+	      mode = { "buildable-type", "friend" },
+	      cursor_box_type = "entity",
+	      entity_type_filters = type_filters,
+	    },
+	    alt_select = {
+	      border_color = { r = 1, g = 0.5 },
+	      mode = { "buildable-type", "friend" },
+	      cursor_box_type = "entity",
+	      entity_type_filters = type_filters,
+	    },
+	    reverse_select = {
+	      border_color = { r = 1 },
+	      mode = { "buildable-type", "friend" },
+	      cursor_box_type = "not-allowed",
+	      entity_type_filters = type_filters,
+	    },
+	    alt_reverse_select = {
+	      border_color = { r = 1 },
+	      mode = { "buildable-type", "friend" },
+	      cursor_box_type = "not-allowed",
+	      entity_type_filters = type_filters,
+	    },
+	    stack_size = 1,
+	    flags = { "only-in-cursor", "not-stackable", "spawnable" },
+    hidden = true,
+	
+	
+
     }
 
 })
