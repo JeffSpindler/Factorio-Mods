@@ -16,16 +16,17 @@ g_marc_units = {}
 
 g_marc_units[1] = {name="marc-gui-persec",          localized_name = {"marc-gui-persec"},           multiplier = 1, divisor = 1, infotype="time"}
 g_marc_units[2] = {name="marc-gui-permin",          localized_name = {"marc-gui-permin"},           multiplier = 60, divisor = 1, infotype="time"}
+g_marc_units[3] = {name="marc-gui-perhour",          localized_name = {"marc-gui-perhour"},           multiplier = 3600, divisor = 1, infotype="time"}
 -- g_marc_units[3] = {name="marc-transport-belt",       localized_name = {"marc-transport-belt"},       multiplier = 3, divisor = 45, infotype="transport"}
 -- g_marc_units[4] = {name="marc-fast-transport-belt", localized_name = {"marc-fast-transport-belt"},   multiplier = 3, divisor = 90, infotype="transport"}
 -- g_marc_units[5] = {name="marc-express-transport-belt", localized_name = {"marc-express-transport-belt"}, multiplier = 1, divisor = 45, infotype="transport"}
-g_marc_units[3] = {name="marc-burner-inserter",     localized_name = {"marc-burner-inserter"},      multiplier = 3, divisor = 1.76, infotype="inserter"} -- divisor from https://wiki.factorio.com/Inserters
-g_marc_units[4] = {name="marc-basic-inserter",      localized_name = {"marc-basic-inserter"},       multiplier = 3, divisor = 2.50, infotype="inserter"}
-g_marc_units[5] = {name="marc-long-inserter",       localized_name = {"marc-long-inserter"},        multiplier = 3, divisor = 3.46, infotype="inserter"}
-g_marc_units[6] = {name="marc-fast-inserter",       localized_name = {"marc-fast-inserter"},        multiplier = 1, divisor = 2.31, infotype="inserter"}
-g_marc_units[7] = {name="marc-stack-inserter",  localized_name = {"marc-stack-inserter"},       multiplier = 12, divisor = 27.70, infotype="stack-inserter"}
-g_marc_units[8] = {name="marc-wagon-permin",    localized_name = {"marc-wagon-permin"},         multiplier = 60, divisor =1 , infotype="wagon"}
-g_marc_units[9] = {name="marc-wagon-perhr",     localized_name = {"marc-wagon-perhr"},      multiplier = 3600, divisor =1 , infotype="wagon"}
+g_marc_units[4] = {name="marc-burner-inserter",     localized_name = {"marc-burner-inserter"},      multiplier = 3, divisor = 1.76, infotype="inserter"} -- divisor from https://wiki.factorio.com/Inserters
+g_marc_units[5] = {name="marc-basic-inserter",      localized_name = {"marc-basic-inserter"},       multiplier = 3, divisor = 2.50, infotype="inserter"}
+g_marc_units[6] = {name="marc-long-inserter",       localized_name = {"marc-long-inserter"},        multiplier = 3, divisor = 3.46, infotype="inserter"}
+g_marc_units[7] = {name="marc-fast-inserter",       localized_name = {"marc-fast-inserter"},        multiplier = 1, divisor = 2.31, infotype="inserter"}
+g_marc_units[8] = {name="marc-stack-inserter",  localized_name = {"marc-stack-inserter"},       multiplier = 12, divisor = 27.70, infotype="stack-inserter"}
+g_marc_units[9] = {name="marc-wagon-permin",    localized_name = {"marc-wagon-permin"},         multiplier = 60, divisor =1 , infotype="wagon"}
+g_marc_units[10] = {name="marc-wagon-perhr",     localized_name = {"marc-wagon-perhr"},      multiplier = 3600, divisor =1 , infotype="wagon"}
 
 g_marc_units_default = 2 -- per minutes is the default
 
@@ -392,7 +393,7 @@ local function scale_rate(player, name, count)
         divisor = divisor * stack_size 
     elseif unit_type == "stack-inserter"
     then
-        stack_size = player.force.stack_inserter_capacity_bonus + 1
+        stack_size = player.force.bulk_inserter_capacity_bonus + 1
         local old_div = divisor
         divisor = divisor * stack_size 
     elseif unit_type == "wagon"
