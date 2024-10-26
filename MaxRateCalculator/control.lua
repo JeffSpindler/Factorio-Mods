@@ -1082,14 +1082,16 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 
     crafting_speed = crafting_speed * ( 1 + total_speed_effect)
         
-    
+    local using_previous_recipe = false
     -- how long does the item take to craft if no modules and crafting speed was 1?  It's in the recipe.energy
-    -- local recipe = get_entity_recipe(entity)
     local recipe, quality = entity.get_recipe()
     if recipe == nil and entity.type == "furnace" and entity.previous_recipe ~= nil
     then
         recipe = entity.previous_recipe.name
+        using_previous_recipe = true
         debug_log(__FUNC__(),"switch to previous " .. recipe.name)
+    else
+        debug_log(__FUNC__()," original recipe, finger lickin' good!")
     end
 
     if recipe  ~= nil
@@ -1147,11 +1149,11 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
             -- but some mods like Bob's Greenhouse still was using a range
             if prod.probability ~= nil
             then 
-                -- debug_log(__FUNC__(),"probability is " .. prod.probability)
+                debug_log(__FUNC__(),"probability is " .. prod.probability .. ", prod.amount_min="..(prod.amount_min or "nil") ..", prod.amount_max="..(prod.amount_max or "nil")..", prod.amount="..(prod.amount or "nil"))
                 chance = prod.probability
                 if prod.amount_min ~= nil
                 then
-                amount = chance * (prod.amount_min + prod.amount_max) / 2
+                    amount = chance * (prod.amount_min + prod.amount_max) / 2
                 else
                    amount = prod.amount * chance
                 end
@@ -1307,8 +1309,6 @@ local function calc_production(inout_data, surface, entity)
     local beacon_modeffects = init_modeffects()
     
     beacon_modeffects = check_beacons(surface, entity)
-
-        
     if get_entity_recipe(entity)  == nil
     then
         machines_with_no_recipe = machines_with_no_recipe + 1
@@ -1350,20 +1350,20 @@ end
 
 -- ----------------------------------------------------------------
 
-local function dump_help(prodproto, filter)
-    local helpText = prodproto.help()
-    local helpTable = helpText:split("\n")
-    -- debug_log(__FUNC__(), "help for " ..prodproto.name)
-    for hix = 1, #helpTable do
-        if helpTable[hix] ~= nil
-        then
-            if string.find(helpTable[hix], filter)
-            then
-                debug_log(__FUNC__(),helpTable[hix])
-            end
-        end
-    end
-end
+-- local function dump_help(prodproto, filter)
+--     local helpText = prodproto.help()
+--     local helpTable = helpText:split("\n")
+--     -- debug_log(__FUNC__(), "help for " ..prodproto.name)
+--     for hix = 1, #helpTable do
+--         if helpTable[hix] ~= nil
+--         then
+--             if string.find(helpTable[hix], filter)
+--             then
+--                 debug_log(__FUNC__(),helpTable[hix])
+--             end
+--         end
+--     end
+-- end
 
 -- cribbed from helmod
 local function getPowerExtract(temperature, heat_capac)
@@ -1396,7 +1396,7 @@ local function getFluidProduction(proto)
       local target_temperature = proto.target_temperature
       debug_log(__FUNC__(),"target temp is " .. target_temperature .. " heat cap is " .. heat_capacity)
       local power_extract = getPowerExtract(target_temperature, heat_capacity)
-      local energy_consumption = proto.max_energy_usage
+      local energy_consumption = proto.get_max_energy_usage()
       debug_log(__FUNC__(), "energy_consumption " .. energy_consumption .. "/" .. power_extract .. " = " .. (energy_consumption / power_extract)) 
       return energy_consumption / (effectivity * power_extract) 
     -- number is too high for kras by a factor of 2.5, is correct for vanilla
@@ -1413,20 +1413,19 @@ local function calc_boiler(inout_data, surface, entity)
     -- but since consumption/production rates not exposed by factorio (as far as I know)
     -- have to use hardcoded numbers
     local prodproto = prototypes.entity[entity.name]   
-    debug_log(__FUNC__(), "type is " .. prodproto.type)
-    debug_log(__FUNC__(), "max is " .. prodproto.max_energy_usage)
-    -- debug_log(__FUNC__(), "fluid_usage_per_tick is " .. prodproto.fluid_usage_per_tick)
-    local wontwork = prodproto.emissions_per_second
-    debug_log(__FUNC__(), "wontwork is " .. wontwork)
-    local energySource = prodproto.heat_energy_source_prototype
-    if energySource == nil
-    then
-        debug_log(__FUNC__(), "energySource is nil")
-    else
-        debug_log(__FUNC__(), "energySource is not nil")
-            dump_help(energySource, "eff")
-            debug_log(__FUNC__(), "emissions is " .. energySource.emissions)
-    end
+    -- debug_log(__FUNC__(), "type is " .. prodproto.type)
+    -- debug_log(__FUNC__(), "max is " .. prodproto.get_max_energy_usage())
+    -- -- debug_log(__FUNC__(), "fluid_usage_per_tick is " .. prodproto.fluid_usage_per_tick)
+    -- 
+    -- local energySource = prodproto.heat_energy_source_prototype
+    -- if energySource == nil
+    -- then
+    --     debug_log(__FUNC__(), "energySource is nil")
+    -- else
+    --     debug_log(__FUNC__(), "energySource is not nil")
+    --         dump_help(energySource, "eff")
+    --         debug_log(__FUNC__(), "emissions is " .. energySource.emissions)
+    -- end
     -- local emissions_per_minute = energySource.emissions_per_minute
     -- debug_log(__FUNC__(),"emissions per minute  " .. emissions_per_minute)
 --  local helpText = prodproto.help()
@@ -1445,8 +1444,8 @@ local function calc_boiler(inout_data, surface, entity)
 --          end
 --      end
 --  end
-    dump_help(prodproto, "consumption")
-    dump_help(prodproto, "energy")
+ --   dump_help(prodproto, "consumption")
+ --   dump_help(prodproto, "energy")
 
     --debug_log(__FUNC__(), "prodproto.energy_consumption " .. (prodproto.energy_consumption or -99))
     local helsanswer = getFluidProduction(prodproto)    
