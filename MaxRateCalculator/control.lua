@@ -17,9 +17,6 @@ g_marc_units = {}
 g_marc_units[1] = {name="marc-gui-persec",          localized_name = {"marc-gui-persec"},           multiplier = 1, divisor = 1, infotype="time"}
 g_marc_units[2] = {name="marc-gui-permin",          localized_name = {"marc-gui-permin"},           multiplier = 60, divisor = 1, infotype="time"}
 g_marc_units[3] = {name="marc-gui-perhour",          localized_name = {"marc-gui-perhour"},           multiplier = 3600, divisor = 1, infotype="time"}
--- g_marc_units[3] = {name="marc-transport-belt",       localized_name = {"marc-transport-belt"},       multiplier = 3, divisor = 45, infotype="transport"}
--- g_marc_units[4] = {name="marc-fast-transport-belt", localized_name = {"marc-fast-transport-belt"},   multiplier = 3, divisor = 90, infotype="transport"}
--- g_marc_units[5] = {name="marc-express-transport-belt", localized_name = {"marc-express-transport-belt"}, multiplier = 1, divisor = 45, infotype="transport"}
 g_marc_units[4] = {name="marc-burner-inserter",     localized_name = {"marc-burner-inserter"},      multiplier = 3, divisor = 1.76, infotype="inserter"} -- divisor from https://wiki.factorio.com/Inserters
 g_marc_units[5] = {name="marc-basic-inserter",      localized_name = {"marc-basic-inserter"},       multiplier = 3, divisor = 2.50, infotype="inserter"}
 g_marc_units[6] = {name="marc-long-inserter",       localized_name = {"marc-long-inserter"},        multiplier = 3, divisor = 3.46, infotype="inserter"}
@@ -69,6 +66,8 @@ end
 -- ----------------------------------------------------------------
 function debug_log(f, str)
     local exclude = f == "energy_usage"
+       -- or f == "calc_assembler"
+
     if storage.marc_debug and not exclude
     then
         game.print(f .. ": " .. str)
@@ -721,7 +720,7 @@ local function calc_mod( modname, modeffects, modquant, effectivity, machine_pro
 
     local dummy = 0
     protoeffects = prototypes.item[modname].module_effects
-    debug_print("calc_mod mod name=" .. modname .. ", quantity=" .. modquant .. ",  machine_proto=" .. machine_proto.name)
+    debug_log(__FUNC__(),"calc_mod mod name=" .. modname .. ", quantity=" .. modquant .. ",  machine_proto=" .. machine_proto.name)
     local old_way = false
     local new_way = true
     
@@ -729,7 +728,7 @@ local function calc_mod( modname, modeffects, modquant, effectivity, machine_pro
     then
     for effectname,effectvals in pairs(protoeffects)
     do
-        debug_print("...effectname is " .. effectname .. " modquant " .. modquant)
+        debug_log(__FUNC__(),"...effectname is " .. effectname .. " modquant " .. modquant)
         for _,bonamount in pairs(effectvals) 
         do
             local allowed = effect_allowed_for_machine(effectname, machine_proto)
@@ -759,18 +758,19 @@ local function calc_mod( modname, modeffects, modquant, effectivity, machine_pro
         elseif new_way
         then
             local speedEffect = protoeffects.speed or 0
-            debug_log(__FUNC__(), "NEW WAY speedEffect is ".. (speedEffect or "nil") .. ", modeffects.speed was " .. modeffects.speed)
+            local speedwas = modeffects.speed
+
             modeffects.speed = modeffects.speed + ( speedEffect * modquant * effectivity)
-            debug_log(__FUNC__(), "NEW WAY modeffects.speed now " .. modeffects.speed)
+            debug_log(__FUNC__(), "NEW WAY speedEffect is ".. (speedEffect or "nil") .. ", modeffects.speed was " .. speedwas ..", now " .. modeffects.speed..", speedEffect="..speedEffect..", effectivity="..effectivity)
             
             local productivity = protoeffects.productivity or 0
             local quality = protoeffects.quality or 0
             local consumption = protoeffects.consumption or 0
             modeffects.prod = modeffects.prod + ( productivity * modquant * effectivity)
             modeffects.consumption = modeffects.consumption + ( consumption * modquant * effectivity)
-            debug_log(__FUNC__(), "NEW WAY quality is " .. quality)
+            -- debug_log(__FUNC__(), "NEW WAY quality is " .. quality)
             modeffects.quality = modeffects.quality + ( quality * modquant * effectivity)
-            debug_log(__FUNC__(), "NEW WAY modeffects.quality now " .. modeffects.quality)
+            -- debug_log(__FUNC__(), "NEW WAY modeffects.quality now " .. modeffects.quality)
         end
 
 
@@ -883,7 +883,7 @@ local function check_beacons(surface, entity)
     
     if max_beacon_dist == -1
     then
-        debug_print("beacon distance was -1 so look")
+         debug_log(__FUNC__(),"beacon distance was -1 so look")
         
     for _, entity_proto in pairs(prototypes.get_entity_filtered(
         {
@@ -893,7 +893,7 @@ local function check_beacons(surface, entity)
         do            
             if entity_proto.type == "beacon"
             then
-                debug_print("found a beacon " .. entity_proto.name)
+                 debug_log(__FUNC__(),"found a beacon " .. entity_proto.name)
                 -- local thingy = entity.get_beacon_effect_receivers()
                 local distance = entity_proto.get_supply_area_distance()
                 
@@ -905,12 +905,12 @@ local function check_beacons(surface, entity)
             end
         end
         -- max_beacon_dist = prototypes.entity["beacon"].get_supply_area_distance()
-        debug_print("beacon distance is " .. max_beacon_dist)
+         debug_log(__FUNC__(),"beacon distance is " .. max_beacon_dist)
     end
     
-    debug_print("check_beacons searching around " .. x .. "," .. y .. " beacon dist is " .. max_beacon_dist)
+     debug_log(__FUNC__(),"check_beacons searching around " .. x .. "," .. y .. " beacon dist is " .. max_beacon_dist)
     machine_box = entity.prototype.selection_box
-    debug_print("check_beacons box is " .. machine_box.left_top.x .. "," .. machine_box.left_top.y .. " thru " .. machine_box.right_bottom.x .. "," .. machine_box.right_bottom.y)
+     debug_log(__FUNC__(),"check_beacons box is " .. machine_box.left_top.x .. "," .. machine_box.left_top.y .. " thru " .. machine_box.right_bottom.x .. "," .. machine_box.right_bottom.y)
     modeffects = init_modeffects()
 
     local beacons = 0
@@ -919,22 +919,22 @@ local function check_beacons(surface, entity)
     -- assumes all beacons have same effect radius
     search_area = { { x + machine_box.left_top.x - max_beacon_dist,     y + machine_box.left_top.y - max_beacon_dist }, 
                     { max_beacon_dist + x + machine_box.right_bottom.x, max_beacon_dist + y + machine_box.right_bottom.y }}
-    debug_print(" upper left " ..   x + machine_box.left_top.x - max_beacon_dist .. "," .. y + machine_box.left_top.y - max_beacon_dist)                
+     debug_log(__FUNC__()," upper left " ..   x + machine_box.left_top.x - max_beacon_dist .. "," .. y + machine_box.left_top.y - max_beacon_dist)                
 
     for _,beacon in pairs(surface.find_entities_filtered{ area=search_area, type="beacon"})
     do  
-        debug_print("test a beacon")
+        debug_log(__FUNC__(),"test a beacon")
         if is_machine_in_range_of_beacon(entity, beacon)
         then
-            debug_print(" beacon area is " .. beacon.prototype.get_supply_area_distance() .. " at " .. beacon.position.x .. "," .. beacon.position.y)
+            debug_log(__FUNC__()," beacon area is " .. beacon.prototype.get_supply_area_distance() .. " at " .. beacon.position.x .. "," .. beacon.position.y)
             beacons = beacons + 1   
             local effectivity = beacon.prototype.distribution_effectivity
-            debug_print("effectivity is " .. effectivity)
+            debug_log(__FUNC__(),"effectivity is " .. effectivity)
             calc_mods( beacon, modeffects, effectivity, machine_proto)
         end
     end
     
-    debug_print("check_beacons - Saw " .. beacons)
+     debug_log(__FUNC__(),"check_beacons - Saw " .. beacons)
     end
     return modeffects
 
@@ -1047,7 +1047,8 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
     local prodproto = prototypes.entity[entity.name]
         
     -- get the machines base crafting speed, in cycles per second
-    local crafting_speed = entity.prototype.get_crafting_speed()
+    -- local crafting_speed = entity.prototype.get_crafting_speed()
+    local crafting_speed = entity.crafting_speed
     debug_log(__FUNC__(),"entity.name " .. entity.name .. " crafting_speed " .. crafting_speed)
     modeffects = init_modeffects()
     local effectivity = 1
@@ -1081,7 +1082,7 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
     
     debug_log(__FUNC__(), "cspeed " .. crafting_speed .. " modspeed " .. modeffects.speed .. " beacon_modeffects.speed " .. beacon_modeffects.speed .. " total_speed_effect " .. total_speed_effect)
 
-    crafting_speed = crafting_speed * ( 1 + total_speed_effect)
+    -- crafting_speed = crafting_speed * ( 1 + total_speed_effect)
         
     local using_previous_recipe = false
     -- how long does the item take to craft if no modules and crafting speed was 1?  It's in the recipe.energy
@@ -1103,6 +1104,7 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
         crafting_time = crafting_time or 1
         local ideal_rate = crafting_speed / crafting_time
         local game_limited_rate  = math.min(ideal_rate, 60)
+         debug_log(__FUNC__(),"ideal_rate=crafting_speed / crafting_time "..ideal_rate.. "=".. crafting_speed .. "/" .. crafting_time)
          debug_log(__FUNC__(),"crafting time " .. crafting_time .. " modeffects.speed " .. modeffects.speed .. " beacon_modeffects.speed " .. beacon_modeffects.speed .. " ideal rate " .. ideal_rate .. " game limited rate " .. game_limited_rate)
 
         if(crafting_time == 0)
@@ -1111,14 +1113,14 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
             debug_log(__FUNC__(),"(entity.get_recipe() or entity.previous_recipe) .energy = 0, wtf?")
         end
 
-        debug_log(__FUNC__(),"recipe has " .. #recipe.ingredients .. " ingredients");
+        debug_log(__FUNC__(),"recipe has " .. #recipe.ingredients .. " ingredients".. ", energy="..(recipe.energy or "nil")..", entity.crafting_speed="..strg(entity.crafting_speed));
         -- for all the ingredients in the recipe, calculate the rate
         -- they're consumed at.  Add to the inputs table.
         for _, ingred in ipairs(recipe.ingredients)
         do
             
             local amount = ingred.amount * game_limited_rate
-            
+            debug_log(__FUNC__(), "ingred.name="..ingred.name..", ingred.amount="..ingred.amount..", game_limited_rate="..game_limited_rate..", amount="..amount)
             record_input(inout_data, ingred.name, amount)
 
         end
@@ -1192,6 +1194,10 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
         end
     end
     
+end
+
+function strg(thing)
+    return thing or "nil"
 end
 
 -- ----------------------------------------------------------------
