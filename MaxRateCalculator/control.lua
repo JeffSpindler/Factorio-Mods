@@ -1049,7 +1049,7 @@ end
 -- ----------------------------------------------------------------
 
 -- for an individual assembler, calculate the rates all the inputs are used at and the outputs are produced at, per second
-local function calc_assembler(entity, inout_data, beacon_modeffects)
+local function calc_assembler(e, entity, inout_data, beacon_modeffects)
 
     local prodproto = prototypes.entity[entity.name]
         
@@ -1094,9 +1094,16 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
     local using_previous_recipe = false
     -- how long does the item take to craft if no modules and crafting speed was 1?  It's in the recipe.energy
     local recipe, quality = entity.get_recipe()
+    if recipe  ~= nil
+    then
+            debug_log(__FUNC__(),"recipe.name="..recipe.name);
+        debug_log(__FUNC__(),"prod bonus="..recipe.productivity_bonus);
+    end
     if recipe == nil and entity.type == "furnace" and entity.previous_recipe ~= nil
     then
-        recipe = entity.previous_recipe.name
+        local prev = entity.previous_recipe
+        local player = game.get_player(e.player_index)
+        recipe = player.force.recipes[prev.name.name]
         using_previous_recipe = true
         debug_log(__FUNC__(),"switch to previous " .. recipe.name)
     else
@@ -1105,6 +1112,9 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
 
     if recipe  ~= nil
     then
+            debug_log(__FUNC__(),"checked recipe.name="..recipe.name);
+        debug_log(__FUNC__(),"checked prod bonus="..recipe.productivity_bonus);
+
         crafting_time = recipe.energy
         debug_log(__FUNC__(), "what's wrong " .. recipe.name)
 
@@ -1149,6 +1159,8 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
         -- for all the products in the recipe (usually just one)
         -- calculate the rate they're produced at and add each product to the outputs
         -- table
+        debug_log(__FUNC__(),"recipe.name="..recipe.name);
+        debug_log(__FUNC__(),"prod bonus="..recipe.productivity_bonus);
         local productivity = (entity.productivity_bonus + recipe.productivity_bonus + 1)
         for _, prod in ipairs(recipe.products)
         do
@@ -1331,7 +1343,7 @@ end
 
 -- ----------------------------------------------------------------
 
-local function calc_production(inout_data, surface, entity)
+local function calc_production(e, inout_data, surface, entity)
     local machines_with_no_recipe = 0
     local beacon_modeffects = init_modeffects()
     
@@ -1341,7 +1353,7 @@ local function calc_production(inout_data, surface, entity)
         machines_with_no_recipe = machines_with_no_recipe + 1
     end
     
-    calc_assembler(entity, inout_data, beacon_modeffects)   
+    calc_assembler(e, entity, inout_data, beacon_modeffects)   
     
     return machines_with_no_recipe
 end
@@ -1570,10 +1582,10 @@ script.on_event(defines.events.on_player_selected_area,
             count = count + 1
             if entity.type == "assembling-machine"  or entity.type == "rocket-silo"     
             then        
-                no_recipe_assemblers = no_recipe_assemblers + calc_production(inout_data, surface, entity)
+                no_recipe_assemblers = no_recipe_assemblers + calc_production(event, inout_data, surface, entity)
             elseif entity.type == "furnace"
             then 
-                no_recipe_smelters = no_recipe_smelters + calc_production(inout_data, surface, entity)
+                no_recipe_smelters = no_recipe_smelters + calc_production(event, inout_data, surface, entity)
             elseif entity.type == "mining-drill"
             then
                 calc_mining( inout_data, surface, player, entity)
