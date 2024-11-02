@@ -12,56 +12,52 @@
 
 data:extend(
 {
-	{
-		type = "selection-tool",
-		name = "max-rate-calculator",
-		show_in_library = false,
-		icon = "__MaxRateCalculator__/graphics/max-rate-calculator32.png",
-		flags = { "only-in-cursor"},
-		subgroup = "tool",
-		order = "c[automated-construction]-b[tree-deconstructor]",
-		stack_size = 1,
-		icon_size = 32,
-		selection_color = { r = 0.6, g = 0.6, b = 0 },
-		alt_selection_color = { r = 0, g = 0, b = 1 },
-		selection_mode = {"blueprint", "buildable-type"},
-		alt_selection_mode = {"blueprint", "buildable-type"},
-		selection_cursor_box_type = "entity",
-		alt_selection_cursor_box_type = "not-allowed",
-	}
-
-	,
-	select = {
-	      border_color = { r = 1, g = 1 },
-	      mode = { "buildable-type", "friend" },
-	      cursor_box_type = "entity",
-	      entity_type_filters = type_filters,
-	    },
-	    alt_select = {
-	      border_color = { r = 1, g = 0.5 },
-	      mode = { "buildable-type", "friend" },
-	      cursor_box_type = "entity",
-	      entity_type_filters = type_filters,
-	    },
-	    reverse_select = {
-	      border_color = { r = 1 },
-	      mode = { "buildable-type", "friend" },
-	      cursor_box_type = "not-allowed",
-	      entity_type_filters = type_filters,
-	    },
-	    alt_reverse_select = {
-	      border_color = { r = 1 },
-	      mode = { "buildable-type", "friend" },
-	      cursor_box_type = "not-allowed",
-	      entity_type_filters = type_filters,
-	    },
-	    stack_size = 1,
-	    flags = { "only-in-cursor", "not-stackable", "spawnable" },
+    {
+    type = "selection-tool",
+    name = "max-rate-calculator",
+    icons = {
+      { icon = "__MaxRateCalculator__/graphics/max-rate-calculator32.png", icon_size = 32, mipmap_count = 2 },
+    },
+    select = {
+          border_color = { r = 1, g = 1 },
+          mode = { "buildable-type", "friend" },
+          cursor_box_type = "entity",
+          entity_type_filters = type_filters,
+        },
+        alt_select = {
+          border_color = { r = 1, g = 0.5 },
+          mode = { "buildable-type", "friend" },
+          cursor_box_type = "entity",
+          entity_type_filters = type_filters,
+        },
+        reverse_select = {
+          border_color = { r = 1 },
+          mode = { "buildable-type", "friend" },
+          cursor_box_type = "not-allowed",
+          entity_type_filters = type_filters,
+        },
+        alt_reverse_select = {
+          border_color = { r = 1 },
+          mode = { "buildable-type", "friend" },
+          cursor_box_type = "not-allowed",
+          entity_type_filters = type_filters,
+    },
+    stack_size = 1,
+    flags = { "only-in-cursor", "not-stackable", "spawnable" },
     hidden = true,
-	
-	
-
-    }
-
-})
+    },
+    
+        {
+    type = "shortcut",
+    name = "max-rate-shortcut",
+    order = "d[tools]-r[max-rate-calculator]",
+    icon = "__MaxRateCalculator__/graphics/max-rate-calculator32.png",
+    small_icon = "__MaxRateCalculator__/graphics/max-rate-calculator24.png",
+    icon_size = 32,
+    small_icon_size = 24,
+    action = "lua",
+    associated_control_input = "max-rate-shortcut",
+   }
+}
+)
 

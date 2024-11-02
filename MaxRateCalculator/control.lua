@@ -343,8 +343,15 @@ end
 
 local function init_selected_units(player_index)
 
+    if(storage.marc_selected_units == nil) then
+    debug_log(__FUNC__(), "storage.marc_selected_units is nil")
+    else
+    debug_log(__FUNC__(), "storage.marc_selected_units count is "..#storage.marc_selected_units)
+    end
+    find_belts()
     storage.marc_selected_units = storage.marc_selected_units or {}
     storage.marc_selected_units[player_index] = storage.marc_selected_units[player_index] or g_marc_units_default
+     debug_log(__FUNC__(), "storage.marc_selected_units["..player_index.."]="..storage.marc_selected_units[player_index])
     if storage.marc_selected_units[player_index] == 0 or storage.marc_selected_units[player_index] > #g_marc_units
     then
         storage.marc_selected_units[player_index] = g_marc_units_default
@@ -1142,6 +1149,7 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
         -- for all the products in the recipe (usually just one)
         -- calculate the rate they're produced at and add each product to the outputs
         -- table
+        local productivity = (entity.productivity_bonus + recipe.productivity_bonus + 1)
         for _, prod in ipairs(recipe.products)
         do
             local chance
@@ -1153,6 +1161,9 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
             if prod.probability ~= nil
             then 
                 debug_log(__FUNC__(),"probability is " .. prod.probability .. ", prod.amount_min="..(prod.amount_min or "nil") ..", prod.amount_max="..(prod.amount_max or "nil")..", prod.amount="..(prod.amount or "nil"))
+                debug_log(__FUNC__(),"product.ignored_by_productivity="..strg(prod.ignored_by_productivity))
+                debug_log(__FUNC__(),"product.ignored_by_productivity="..strg(prod.ignored_by_productivity))
+                debug_log(__FUNC__(),"amount now ")
                 chance = prod.probability
                 if prod.amount_min ~= nil
                 then
@@ -1173,22 +1184,31 @@ local function calc_assembler(entity, inout_data, beacon_modeffects)
                 end
             end    
 
-            -- gotta handle super beacons - they can affect prod too
-            -- debug_log(__FUNC__(), prod.name .. " amount " .. amount .. " modeffects " .. ( 1 + modeffects.prod) .. " cspeed " .. crafting_speed .. " crafting_time" .. crafting_time)
-            local catalyst_amount = 0
-            if prod.catalyst_amount ~= nil
-            then
-                catalyst_amount = prod.catalyst_amount
-            end
-            local productivity = modeffects.prod + beacon_modeffects.prod
-            if productivity < 0
-            then
-                productivity = 0
-            end
+             local catalyst_amount = math.min(prod.ignored_by_productivity or 0, amount)
+            -- Catalysts are not affected by productivity
+
+
+
+            -- -- gotta handle super beacons - they can affect prod too
+            -- -- debug_log(__FUNC__(), prod.name .. " amount " .. amount .. " modeffects " .. ( 1 + modeffects.prod) .. " cspeed " .. crafting_speed .. " crafting_time" .. crafting_time)
+            -- local catalyst_amount = 0
+            -- if prod.catalyst_amount ~= nil
+            -- then
+            --     catalyst_amount = prod.catalyst_amount
+            -- end
+            -- local productivity = modeffects.prod + beacon_modeffects.prod
+            -- if productivity < 0
+            -- then
+            --     productivity = 0
+            -- end
             
             -- speed bonus applies fully to productivity bonus, but is limited to no more that 60 for non-prod boosted output
-            amount =  amount *  game_limited_rate + (amount - catalyst_amount) * productivity * ideal_rate
-            
+            debug_log(__FUNC__(),"amount now="..amount..", game_limited_rate="..game_limited_rate)
+
+            amount =  amount *  game_limited_rate 
+             debug_log(__FUNC__(),"amount now "..amount..", catalyst_amount="..catalyst_amount..", productivity="..productivity);
+            amount = (catalyst_amount + ((amount - catalyst_amount) * productivity)) 
+            debug_log(__FUNC__(),"amount finally="..amount)
             record_output(inout_data, prod.name, amount)
 
         end
@@ -1757,9 +1777,18 @@ local function on_gui_selection(event)
     if event_name == "maxrate_units"
     then
         local selected = root.marc_gui_top.marc_gui_upper.maxrate_units.selected_index
+        local wasselected = storage.marc_selected_units[event.player_index]
         storage.marc_selected_units[event.player_index] = selected
+        debug_print( "selected="..selected..", g_marc_units count ="..#g_marc_units)
         unit_entry = g_marc_units[selected]
+        if selected <= #g_marc_units then
+        
         debug_print("selected " .. unit_entry.name .. " " .. unit_entry.multiplier .. "/" .. unit_entry.divisor)
+        debug_print(" selected ix="..selected..", wasselected="..wasselected..",player="..event.player_index)
+             debug_print( "storage.marc_selected_units["..event.player_index.."]="..storage.marc_selected_units[event.player_index])
+        else
+            debug_print("selected > #g_marc_units")
+        end
         root.marc_gui_top.destroy()
         if storage.marc_inout_data_by_player == nil -- by_player is new, may not exist in old save
         then
